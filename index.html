@@ -69,16 +69,21 @@ select.branch-select:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
 .unclaimed-table .name{font-size:19px;font-weight:800}
 .unclaimed-table .subphone{color:#b5d4f4;font-size:14px}
 @media(max-width:720px){.unclaimed-stats{grid-template-columns:1fr 1fr}.unclaimed-controls{grid-template-columns:1fr}.unclaimed-table th,.unclaimed-table td{font-size:14px;padding:10px 6px}}
+
+/* v1.12 依合約核銷，讓選取與確認動作清楚可見 */
+.pt-claim-contracts{font-size:17px;text-align:left;background:#1f3448;border:1px solid #47667e;border-radius:12px;padding:12px 18px;margin:13px 0;max-height:180px;overflow:auto;line-height:1.9}
+#view-pt .contract-table input[type=checkbox]{cursor:pointer;accent-color:#f1b954}
+#view-pt .contract-table tbody tr:hover{background:#20354c}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.11</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.12.1</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
-<div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。自動歸戶請先匯入完整全館會員名冊。</div>
+<div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
 <section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">員工帳號須由 Firebase 管理員事先建立，並在 users/{uid} 設定 enabled=true、role=staff/admin。</p></section>
 <div id="app" class="hidden">
-<section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；教練課程匯入、歸戶及查詢僅顯示目前選擇的館別。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
-<nav class="tabs"><button class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button><button class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button><button class="tab" data-tab="unclaimed" onclick="tab('unclaimed')">已歸戶・尚未領點</button><button id="contractTab" class="tab" data-tab="contracts" onclick="tab('contracts')">合約歸戶</button><button class="tab" data-tab="members" onclick="tab('members')">會員管理</button><button class="tab" data-tab="import" onclick="tab('import')">Excel 匯入</button><button class="tab" data-tab="logs" onclick="tab('logs')">全館核銷後台</button></nav>
+<section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；課程執行紀錄依館別與合約管理，無須先歸戶。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
+<nav class="tabs"><button class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button><button class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button><button class="tab" data-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button><button class="tab" data-tab="members" onclick="tab('members')">會員管理</button><button class="tab" data-tab="import" onclick="tab('import')">Excel 匯入</button><button class="tab" data-tab="logs" onclick="tab('logs')">全館核銷後台</button></nav>
 <section id="view-verify" class="panel">
 <h2>集點資格查驗</h2>
 <p class="info">這裡只記錄兩種限次集點。<strong>每次固定 1 點</strong>，會員與非會員的這兩項規則相同；所有分館合併計算。</p>
@@ -119,34 +124,35 @@ select.branch-select:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
   </section>
 </div>
 <section id="view-pt" class="panel hidden">
-<h2>教練課程點數查詢與核銷</h2>
-<p class="info">以<strong>手機號碼</strong>查詢本館自動比對或人工核對完成的合約。每堂有效簽到 1 點，合併本館未核銷堂數；若名冊後續出現同名會員，先前的自動歸戶會暫停核銷，直到重新人工確認。</p>
-<div class="grid"><label>會員手機<input id="ptPhone" inputmode="numeric" maxlength="10" placeholder="09XXXXXXXX" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPT()}"></label><div><label>&nbsp;</label><button class="btn primary" style="font-size:19px;min-height:49px" onclick="searchPT()">查詢全部待領課程點數</button></div></div>
-<div id="ptResult" class="result" style="margin-top:15px"></div>
-<p class="notice">自動歸戶只用於完整名冊中姓名唯一的會員。查無名冊或同名異人仍需人工確認合約所屬手機。不同館別的課程不混合。</p>
+<h2>教練課程｜依合約查詢及核銷</h2>
+<p class="info">不用會員名冊或手機號碼。依目前所選館別，輸入<strong>學員姓名或合約訂單編號</strong>，選取正確合約後一次累計未領點數。<strong>同名多張合約不會自動合併</strong>，請先向公司原系統核對。</p>
+<div class="grid"><label>查詢學員姓名／合約訂單編號<input id="ptQuery" autocomplete="off" maxlength="120" placeholder="例如 王小明 或 THP260900027" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPT()}"></label><div><label>&nbsp;</label><button class="btn primary" style="font-size:19px;min-height:51px" onclick="searchPT()">查詢本館待領課程</button></div></div>
+<div id="ptResult" class="result" style="margin-top:15px">請輸入姓名或合約編號查詢。</div>
+<p class="notice">請先確認選取的合約確實屬於同一位學員。網站只會紀錄核銷，LINE 點數仍由櫃檯另外發放。</p>
+</section>
+<section id="ptClaimModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ptClaimTitle">
+ <section class="modal-card">
+  <div class="modal-icon" aria-hidden="true">✓</div>
+  <h2 id="ptClaimTitle">已確認課程點數</h2>
+  <div id="ptClaimPerson" class="modal-person"></div>
+  <div id="ptClaimSummary" class="modal-rule"></div>
+  <p class="modal-instruction">請櫃檯提供現場的 <strong>LINE QR Code</strong>，由 LINE 實際發放本次點數。</p>
+  <div id="ptClaimContracts" class="pt-claim-contracts"></div>
+  <div class="notice">本網站不會發放 LINE 點數。<strong>只有在 LINE 確實發點後</strong>，才按「登記核銷完成」。</div>
+  <div class="modal-actions"><button class="btn green" id="ptFinishBtn" onclick="redeemSelectedPT()">LINE 已成功發點 → 登記核銷完成</button><button class="btn" onclick="cancelPTClaim()">尚未發點 → 返回修改</button></div>
+ </section>
 </section>
 <section id="view-unclaimed" class="panel hidden">
-<h2>已歸戶・尚未領取課程點數</h2>
-<p class="info">顯示<strong>目前作業館別</strong>自動比對或人工確認歸戶、且仍有待領點數的會員。若會員名冊新增了同名異人，先前僅依姓名自動比對的合約會排除，待人工核對後才能領點。</p>
-<div id="unclaimedStats" class="unclaimed-stats"><div class="stat">待查詢<b>—</b><small>進入頁面會讀取目前館別資料</small></div></div>
-<div class="unclaimed-controls"><label>搜尋姓名、會員手機或合約編號<input id="unclaimedFilter" autocomplete="off" placeholder="輸入姓名、手機或合約編號即可篩選" oninput="renderUnclaimed()"></label><button class="btn primary" onclick="loadUnclaimed()">重新查詢本館待領名單</button></div>
-<p id="unclaimedStatus" class="info" role="status" aria-live="polite">請選擇上方館別後查詢。</p>
+<h2>本館課程｜尚未領點清單</h2>
+<p class="info">每張合約獨立列出，包含非會員。這不是會員歸戶名單；同名學員可能是不同人，請以合約訂單編號確認，不能只看姓名合併點數。</p>
+<div id="unclaimedStats" class="unclaimed-stats"><div class="stat">待查詢<b>—</b></div></div>
+<div class="unclaimed-controls"><label>篩選學員姓名或合約編號<input id="unclaimedFilter" autocomplete="off" placeholder="輸入姓名／合約編號" oninput="renderUnclaimed()"></label><button class="btn primary" onclick="loadUnclaimed()">重新查詢本館待領合約</button></div>
+<p id="unclaimedStatus" class="info" role="status" aria-live="polite">切換至此頁籤後自動讀取。</p>
 <div id="unclaimedList" class="scroll"></div>
-<p class="notice">點選「前往核銷」後，仍須在教練課程頁面確認點數，並於 LINE 實際發放成功後才登記核銷。此名單不會代替 LINE 發點。</p>
-</section>
-<section id="view-contracts" class="panel hidden">
-<h2>合約歸戶｜自動比對＋異常人工確認</h2>
-<p class="notice">請先匯入<strong>完整的全館會員名冊</strong>。課程匯入後，姓名在名冊中只對應<strong>一位</strong>會員時自動歸戶；如有同名異人、查無名冊或資料衝突，才需要使用公司系統以<strong>合約訂單編號</strong>核對手機。姓名唯一只是比對依據，不是身分證明。</p>
-<div class="panel sub"><div class="bar"><div><h3>本館批次自動比對</h3><p class="info">課程匯入後會自動執行；若先匯入課程、後匯入會員名冊，或名冊有更新，也可以在此重新比對。已確認的合約不會被覆蓋。</p></div><button class="btn primary" onclick="autoMatchFromButton()">重新比對本館未歸戶合約</button></div><p id="autoMatchStatus" class="info" role="status">尚未執行批次比對。</p><div id="autoMatchStats" class="unclaimed-stats hidden"></div></div>
-<div class="grid"><div><label>合約訂單編號<input id="contractLookup" maxlength="120" placeholder="例如 THP260900027" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupContract()}"></label></div><div><label>&nbsp;</label><button class="btn primary" onclick="lookupContract()">查詢此合約</button></div></div>
-<div id="contractLookupResult" class="result" style="margin-top:10px"></div>
-<div class="panel sub">
-<h3>需人工確認的合約</h3><p class="info">只有同名異人、找不到名冊或自動比對不能判定的合約才會留在此處。<strong>每張合約只要確認一次</strong>，不必逐堂處理。可查閱原因後，於公司原系統查訂單手機並歸戶。</p>
-<button class="btn" onclick="loadContractQueue()">重新整理待歸戶清單</button><div id="contractQueue" class="scroll info" style="margin-top:12px"></div>
-</div>
+<p class="notice">點「前往查詢」只會帶入該張訂單，若同一學員有多張合約，可改用姓名搜尋後勾選全部正確合約。</p>
 </section>
 <section id="view-members" class="panel hidden"><h2>會員管理</h2><p class="info">快速建檔與 Excel 名冊共用同一份會員資料；手機號碼是跨館識別鍵。禁止直接用刪除／換號清除歷史限制。</p><div class="grid"><label>姓名<input id="memberName" maxlength="80" placeholder="會員姓名"></label><label>手機<input id="memberPhone" inputmode="numeric" placeholder="09XXXXXXXX"></label></div><div class="buttons"><button class="btn primary" onclick="saveMember()">新增或更新會員姓名</button><button class="btn" onclick="searchMembers()">重新查詢名冊</button></div><label>搜尋會員（姓名或手機）<input id="memberFilter" placeholder="查詢關鍵字"></label><div id="memberList" class="scroll"></div></section>
-<section id="view-import" class="panel hidden"><h2>資料批次匯入（主管權限）</h2><div class="grid"><div class="panel sub"><h3>一、匯入公司會員名冊</h3><p class="info">需要「姓名／顧客名稱」及「手機／電話」欄位；全館共用，不依作業館別分組；新增／更新不會清除核銷歷史。</p><input id="memberFile" type="file" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="importMemberFile()">預覽名冊並確認匯入</button></div><div class="panel sub"><h3>二、匯入教練課簽到報表</h3><p class="info">依上方選定館別匯入公司 11 欄課程執行報表，逐堂去重並自動比對全館會員名冊；同名異人、查無名冊者才需人工確認。請先匯入完整會員名冊。</p><input id="ptFile" type="file" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="importPTFile()">預覽課程並確認匯入</button></div></div><p class="notice">重要：匯入成功訊息只會在雲端寫入完成後出現。大量匯入可能需要時間；請勿關閉頁面。系統不會替未存檔資料顯示成功。</p><div id="importResult" class="info"></div></section>
+<section id="view-import" class="panel hidden"><h2>資料批次匯入（主管權限）</h2><div class="grid"><div class="panel sub"><h3>一、匯入公司會員名冊</h3><p class="info">需要「姓名／顧客名稱」及「手機／電話」欄位；僅供運動打卡與身體檢測，全館共用，不依作業館別分組；新增／更新不會清除核銷歷史。</p><input id="memberFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importMemberFile()">預覽名冊並確認匯入</button></div><div class="panel sub"><h3>二、匯入教練課簽到報表</h3><p class="info">依上方選定館別匯入公司 11 欄課程執行報表，逐堂去重，依合約訂單編號建立待領點數；<strong>不需會員名冊，也不必歸戶</strong>。</p><input id="ptFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importPTFile()">預覽課程並確認匯入</button></div></div><p class="notice">重要：匯入成功訊息只會在雲端寫入完成後出現。大量匯入可能需要時間；請勿關閉頁面。系統不會替未存檔資料顯示成功。</p><div id="importResult" class="info"></div></section>
 <section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆，CSV 可匯出全部紀錄。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button class="btn green" onclick="exportLogs()">匯出全部核銷紀錄 CSV</button></div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
 <footer>測試版不連結舊站 Firebase 或舊站 Google 試算表。正式部署前請建立員工帳號、套用 Firestore 規則並進行雙館同時核銷測試。</footer>
 </div></main>
@@ -160,7 +166,7 @@ function escapeHTML(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 function toast(message,kind='ok',where='verifyResult'){const x=$(where);x.className='notice '+(kind==='error'?'error':kind==='ok'?'ok':'');x.textContent=message;x.classList.remove('hidden');}
 function fail(e,where='verifyResult'){console.error(e);toast('操作沒有完成：'+(e?.message||String(e))+'。資料未標記為成功。','error',where);}
 let ptSelection=null;
-let pendingContractResult=null;
+let ptRows=[],ptSelected=new Set(),ptLookupBranch='';
 let unclaimedRows=[],unclaimedBranch='',unclaimedRequest=0;
 function showFeedbackModal(title,description,kind='ok',stats=[]){
   $('feedbackTitle').textContent=title;
@@ -176,7 +182,7 @@ function showFeedbackModal(title,description,kind='ok',stats=[]){
 function closeFeedbackModal(){
   $('feedbackModal').classList.add('hidden');
   if(!$('app').classList.contains('hidden')&&!$('view-verify').classList.contains('hidden'))$('phone').focus();
-  else if(!$('view-pt').classList.contains('hidden'))$('ptPhone').focus();
+  else if(!$('view-pt').classList.contains('hidden'))$('ptQuery').focus();
 }
 function normalizedPhone(t){let p=String(t??'').replace(/\D/g,'');if(/^9\d{8}$/.test(p))p='0'+p;return /^09\d{8}$/.test(p)?p:'';}
 function tidyName(n){return String(n??'').trim().replace(/\s+/g,' ').slice(0,80);}
@@ -193,10 +199,9 @@ function setupBranch(){const b=$('branch');b.innerHTML=CFG.branches.map(s=>`<opt
 function branchChanged(){
   sessionStorage.setItem('gk_test_branch',$('branch').value);
   // Switching branch invalidates any previous PT lookup and contract-binding result.
-  ptSelection=null;pendingContractResult=null;unclaimedRequest++;unclaimedRows=[];unclaimedBranch='';
-  $('ptPhone').value='';$('ptResult').textContent='已切換館別；請重新查詢本館課程點數。';
-  $('contractLookup').value='';$('contractLookupResult').textContent='已切換館別；請重新查詢本館合約。';
-  $('contractQueue').textContent='已切換館別；點選重新整理查詢本館待歸戶合約。';
+  ptSelection=null;ptRows=[];ptSelected.clear();ptLookupBranch='';unclaimedRequest++;unclaimedRows=[];unclaimedBranch='';
+  $('ptQuery').value='';$('ptResult').textContent='已切換館別；請重新查詢本館課程點數。';
+  $('ptClaimModal').classList.add('hidden');
   $('unclaimedStatus').textContent='已切換館別；正在重新查詢目前館別。';$('unclaimedList').textContent='';$('unclaimedFilter').value='';$('unclaimedStats').innerHTML='<div class="stat">請重新查詢<b>—</b></div>'; 
   resetVerification();refreshStats();
   if(!$('view-unclaimed').classList.contains('hidden'))loadUnclaimed();
@@ -204,7 +209,7 @@ function branchChanged(){
 function resetVerification(){if(verified)return;const result=$('verifyResult');if(result)result.classList.add('hidden');}
 function selectQuickTask(t){if(!['CHECKIN','INBODY'].includes(t)||busy)return;$('task').value=t;for(const btn of document.querySelectorAll('[data-task-choice]')){const on=btn.dataset.taskChoice===t;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));}resetVerification();}
 function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="import"]').classList.toggle('hidden',!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role;selectQuickTask('CHECKIN');tab('verify');refreshStats();}
-function tab(name){if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt')ptSelection=null;for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');for(const p of document.querySelectorAll('.tab'))p.classList.toggle('active',p.dataset.tab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='contracts')loadContractQueue();if(name==='unclaimed')loadUnclaimed();}
+function tab(name){if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');for(const p of document.querySelectorAll('.tab'))p.classList.toggle('active',p.dataset.tab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();}
 function startDemo(){mode='demo';role='admin';try{Object.assign(store,JSON.parse(localStorage.getItem(CFG.demoStorageKey)||'{}'));}catch(e){};for(const k of ['ptSessionsV2','ptContractBalances','ptContractBindings'])store[k]=store[k]||{};if(!Object.keys(store.members||{}).length){store.members={'0911111111':{name:'示範會員甲',phone:'0911111111'},'0922222222':{name:'示範會員乙',phone:'0922222222'}};saveDemo();}setStatus('本機示範｜不跨裝置');$('banner').textContent='本機示範模式：僅使用虛構資料。沒有跨電腦同步，請勿輸入真實會員資料或用於正式核銷。';initApp();}
 function saveDemo(){localStorage.setItem(CFG.demoStorageKey,JSON.stringify(store));refreshStats();}
 function configured(){return CFG.firebase.apiKey!=='REPLACE_ME'&&CFG.firebase.projectId!=='REPLACE_ME';}
@@ -368,377 +373,139 @@ async function getMember(phone){
   if(mode==='cloud'){const s=await db.collection('members').doc(phone).get({source:'server'});return s.exists?s.data():null;}
   return store.members[phone]||null;
 }
-// v1.11：名冊姓名唯一才自動歸戶；不同合約可對應同一手機。
-// 如果名冊不完整，姓名唯一仍不足以證明真實身分，測試階段不可發放真實 LINE 點數。
-async function getNameMatches(name,cache=new Map()){
-  name=tidyName(name);
-  if(!cache.has(name))cache.set(name,(async()=>{
-    if(mode==='cloud'){
-      fresh();
-      const snap=await db.collection('members').where('name','==',name).limit(3).get({source:'server'});
-      return snap.docs.map(d=>({phone:d.id,...d.data()})).filter(m=>normalizedPhone(m.phone) && tidyName(m.name)===name);
-    }
-    return Object.values(store.members).filter(m=>tidyName(m.name)===name && normalizedPhone(m.phone)).slice(0,3);
-  })());
-  return cache.get(name);
-}
-function isAutoBinding(b){return b && (b.matchMethod==='unique_name' || (b.verifiedInCompanySystem===false));}
-async function autoBindingSafe(b,cache){
-  if(!isAutoBinding(b))return true;
-  const matches=await getNameMatches(b.student,cache);
-  return matches.length===1 && matches[0].phone===b.phone;
-}
-async function getUnboundBalances(branch){
-  let balances=[];
+// v1.12: 教練課程以「館別 + 合約」為領點單位；不靠手機或姓名自動歸戶。
+async function loadPTBalances(branch,onlyPending=true){
+  fresh();let out=[];
   if(mode==='cloud'){
-    let cursor=null;
-    while(true){
+    let cursor=null;while(true){
       let q=db.collection('ptContractBalances').where('branch','==',branch).limit(250);
       if(cursor)q=q.startAfter(cursor);
       const snap=await q.get({source:'server'});
-      balances.push(...snap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>Number(c.pending)>0 && c.branch===branch));
-      if(snap.size<250)break;
-      cursor=snap.docs[snap.docs.length-1];
+      for(const doc of snap.docs){const b=doc.data();if(b.branch!==branch)continue;if(!onlyPending||Number(b.pending)>0)out.push({id:doc.id,...b});}
+      if(snap.size<250)break;cursor=snap.docs[snap.docs.length-1];
     }
-  }else balances=Object.entries(store.ptContractBalances).map(([id,c])=>({id,...c})).filter(c=>c.branch===branch&&Number(c.pending)>0);
-  const unbound=[];
-  for(let i=0;i<balances.length;i+=20){
-    const chunk=balances.slice(i,i+20);
-    const bound=await Promise.all(chunk.map(async c=>{
-      if(mode==='cloud')return (await db.collection('ptContractBindings').doc(c.id).get({source:'server'})).exists;
-      return !!store.ptContractBindings[c.id];
-    }));
-    for(let j=0;j<chunk.length;j++)if(!bound[j])unbound.push(chunk[j]);
+  }else{
+    out=Object.entries(store.ptContractBalances||{}).map(([id,b])=>({id,...b})).filter(b=>b.branch===branch&&(!onlyPending||Number(b.pending)>0));
   }
-  return unbound;
-}
-async function autoBindOne(c,phone,branch){
-  if(mode==='cloud'){
-    const bRef=db.collection('ptContractBindings').doc(c.id),sRef=db.collection('ptContractBalances').doc(c.id),mRef=db.collection('members').doc(phone);
-    return await db.runTransaction(async tx=>{
-      const [old,stat,mem]=await Promise.all([tx.get(bRef),tx.get(sRef),tx.get(mRef)]);
-      if(old.exists)return false;
-      if(!stat.exists||stat.data().student!==c.student||stat.data().branch!==branch||stat.data().contract!==c.contract)throw new Error('合約資料已變更');
-      if(!mem.exists||tidyName(mem.data().name)!==tidyName(c.student))throw new Error('會員姓名已變更');
-      tx.set(bRef,{contract:c.contract,student:c.student,phone,branch,boundBy:user.uid,boundAt:firebase.firestore.FieldValue.serverTimestamp(),verifiedInCompanySystem:false,matchMethod:'unique_name'});
-      return true;
-    });
-  }
-  if(store.ptContractBindings[c.id])return false;
-  const stat=store.ptContractBalances[c.id],member=store.members[phone];
-  if(!stat||stat.student!==c.student||stat.branch!==branch||stat.contract!==c.contract||tidyName(member?.name)!==c.student)throw new Error('資料已更動');
-  store.ptContractBindings[c.id]={contract:c.contract,student:c.student,phone,branch,boundBy:'DEMO',boundAt:new Date().toISOString(),verifiedInCompanySystem:false,matchMethod:'unique_name'};
-  return true;
-}
-async function runAutoMatch(branch){
-  fresh();if(!CFG.branches.includes(branch))throw new Error('館別設定錯誤');
-  if(mode==='cloud'&&!isManager())throw new Error('雲端批次自動歸戶須由主管執行；異常合約仍可由一般員工人工歸戶');
-  const targets=await getUnboundBalances(branch);
-  const stats={scanned:targets.length,matched:0,ambiguous:0,missing:0,failed:0,skipped:0};
-  const cache=new Map();let offset=0;
-  const workers=Array.from({length:Math.min(6,targets.length)},async()=>{
-    while(offset<targets.length){
-      const c=targets[offset++];
-      try{
-        const matches=await getNameMatches(c.student,cache);
-        if(matches.length===0){stats.missing++;continue;}
-        if(matches.length!==1){stats.ambiguous++;continue;}
-        if(await autoBindOne(c,matches[0].phone,branch))stats.matched++;
-        else stats.skipped++;
-      }catch(e){stats.failed++;console.error('合約自動歸戶失敗',c.contract,e);}
-    }
-  });
-  await Promise.all(workers);
-  if(mode==='demo')saveDemo();
-  return stats;
-}
-function showAutoMatchStats(branch,s){
-  $('autoMatchStatus').textContent=`${branch}館：檢查 ${s.scanned} 張未歸戶合約；自動完成 ${s.matched} 張，同名需核對 ${s.ambiguous} 張、名冊無對應 ${s.missing} 張，異常 ${s.failed} 張。${s.skipped?'另外 '+s.skipped+' 張已由其他操作完成。':''}`;
-  $('autoMatchStats').innerHTML=`<div class="stat">自動完成<b>${s.matched}</b><small>姓名唯一</small></div><div class="stat">同名待核對<b>${s.ambiguous}</b><small>需查公司訂單</small></div><div class="stat">查無名冊<b>${s.missing}</b><small>待建檔</small></div>`;
-  $('autoMatchStats').classList.remove('hidden');
-}
-async function autoMatchFromButton(){
-  if(busy)return;
-  const branch=$('branch').value;
-  if(!confirm(`確定要自動比對 ${branch}館尚未歸戶的合約嗎？\n請先確認已匯入完整全館會員名冊；只在姓名唯一時自動綁定。`))return;
-  lock(true);$('autoMatchStatus').textContent='正在比對會員名冊及待歸戶合約…';
-  try{
-    const s=await runAutoMatch(branch);showAutoMatchStats(branch,s);await loadContractQueue();
-    showFeedbackModal('自動比對完成',`${branch}館只自動歸戶姓名唯一的合約；同名異人及查無名冊的訂單仍需人工確認。`,'ok',[{label:'自動歸戶',value:s.matched},{label:'同名待確認',value:s.ambiguous},{label:'名冊無對應',value:s.missing},{label:'失敗',value:s.failed}]);
-  }catch(e){$('autoMatchStatus').textContent='比對失敗：'+e.message;showFeedbackModal('自動比對未完成',e.message,'error');}
-  finally{lock(false);}
-}
-async function getPTContractsForPhone(phone,branch){
-  let bindings=[];
-  if(mode==='cloud'){
-    const q=await db.collection('ptContractBindings').where('phone','==',phone).limit(401).get({source:'server'});
-    if(q.size>400)throw new Error('此會員合約數量過多，請洽管理人員協助處理');
-    bindings=q.docs.map(d=>({id:d.id,...d.data()})).filter(v=>v.branch===branch);
-  }else bindings=Object.entries(store.ptContractBindings).map(([id,v])=>({id,...v})).filter(v=>v.phone===phone&&v.branch===branch);
-  const found=[];found.blockedAuto=0;
-  const nameCache=new Map();
-  for(const b of bindings){
-    if(!(await autoBindingSafe(b,nameCache))){found.blockedAuto++;continue;}
-    let v;
-    if(mode==='cloud'){const d=await db.collection('ptContractBalances').doc(b.id).get({source:'server'});v=d.exists?d.data():null;}
-    else v=store.ptContractBalances[b.id];
-    if(!v)continue;
-    if(v.student!==b.student||v.contract!==b.contract||v.branch!==branch)throw new Error(`合約 ${b.contract} 的館別或資料歸屬不一致，請主管檢查`);
-    if(Number(v.pending)>0)found.push({id:b.id,contract:b.contract,branch,pending:Number(v.pending),student:b.student});
-  }
-  return found;
+  return out.filter(b=>Number.isInteger(Number(b.pending))&&Number(b.pending)>=0).sort((a,b)=>String(a.student).localeCompare(String(b.student),'zh-TW')||String(a.contract).localeCompare(String(b.contract)));
 }
 function renderUnclaimed(){
-  const list=$('unclaimedList'),summary=$('unclaimedStats');
-  if(!unclaimedBranch||unclaimedBranch!==$('branch').value){list.textContent='請先查詢目前作業館別的待領清單。';return;}
+  const el=$('unclaimedList');if(unclaimedBranch!==$('branch').value){el.textContent='請先讀取本館清單。';return;}
   const term=$('unclaimedFilter').value.trim().toLowerCase();
-  const matched=unclaimedRows.filter(r=>!term||[r.name,r.phone,r.contracts.map(c=>c.contract).join(' ')].join(' ').toLowerCase().includes(term));
-  const pts=matched.reduce((n,r)=>n+r.points,0),contractCount=matched.reduce((n,r)=>n+r.contracts.length,0);
-  summary.innerHTML=`<div class="stat">待領會員<b>${matched.length}</b><small>${escapeHTML(unclaimedBranch)}館${term?'・符合搜尋條件':''}</small></div><div class="stat">已歸戶待領點數<b>${pts}</b><small>每堂實際簽到 1 點</small></div><div class="stat">有待領點數的合約<b>${contractCount}</b><small>不包含未歸戶與已核銷堂數</small></div>`;
-  if(!matched.length){list.innerHTML='<div class="notice">本館目前沒有符合條件的「已歸戶、尚未領取」課程點數。</div>';return;}
-  list.innerHTML=`<table class="unclaimed-table"><thead><tr><th>會員</th><th>待領點數</th><th>合約訂單編號／各合約點數</th><th>操作</th></tr></thead><tbody>${matched.map(r=>`<tr><td><div class="name">${escapeHTML(r.name)}</div><div class="subphone">${escapeHTML(r.phone.slice(0,4)+'***'+r.phone.slice(-3))}</div></td><td><span class="strong-point">${r.points} 點</span></td><td class="contract-cell">${r.contracts.map(c=>`${escapeHTML(c.contract)}：${c.pending} 點`).join('<br>')}</td><td><button type="button" class="btn primary" data-phone="${escapeHTML(r.phone)}" onclick="openPTFromUnclaimed(this.dataset.phone)">前往核銷</button></td></tr>`).join('')}</tbody></table>`;
+  const list=unclaimedRows.filter(x=>!term||`${x.student} ${x.contract}`.toLowerCase().includes(term));
+  const points=list.reduce((sum,x)=>sum+Number(x.pending),0);
+  $('unclaimedStats').innerHTML=`<div class="stat">待領合約<b>${list.length}</b></div><div class="stat">待領堂數／點數<b>${points}</b></div><div class="stat">不同姓名<b>${new Set(list.map(x=>x.student)).size}</b><small>不等於實際人數</small></div>`;
+  if(!list.length){el.innerHTML='<div class="notice">本館沒有符合條件的待領課程。</div>';return;}
+  el.innerHTML=`<table class="unclaimed-table"><thead><tr><th>學員姓名</th><th>合約訂單編號</th><th>待領點數</th><th>操作</th></tr></thead><tbody>${list.map(c=>`<tr><td><div class="name">${escapeHTML(c.student)}</div></td><td>${escapeHTML(c.contract)}</td><td><span class="strong-point">${Number(c.pending)} 點</span></td><td><button class="btn primary" data-contract="${escapeHTML(c.contract)}" onclick="openPTFromUnclaimed(this.dataset.contract)">前往查詢</button></td></tr>`).join('')}</tbody></table>`;
 }
 async function loadUnclaimed(){
-  if(busy)return;
-  const branch=$('branch').value,request=++unclaimedRequest;
-  unclaimedRows=[];unclaimedBranch='';
-  $('unclaimedStatus').textContent=`正在讀取 ${branch}館已歸戶、尚未領點的課程，請勿關閉頁面…`;
+  const branch=$('branch').value,token=++unclaimedRequest;
+  unclaimedBranch='';unclaimedRows=[];
+  $('unclaimedStatus').textContent=`正在查詢 ${branch}館的課程…`;
   $('unclaimedList').textContent='';
-  $('unclaimedStats').innerHTML='<div class="stat">讀取中<b>…</b></div>';
   try{
-    fresh();let balanceRows=[];
-    if(mode==='cloud'){
-      let cursor=null,scanned=0;
-      while(true){
-        let q=db.collection('ptContractBalances').where('branch','==',branch).limit(250);
-        if(cursor)q=q.startAfter(cursor);
-        const snap=await q.get({source:'server'});
-        if(request!==unclaimedRequest||branch!==$('branch').value)return;
-        scanned+=snap.size;
-        for(const d of snap.docs){const v=d.data();if(v.branch===branch&&Number(v.pending)>0)balanceRows.push({id:d.id,...v});}
-        $('unclaimedStatus').textContent=`已檢查 ${scanned} 張本館合約，正在核對歸戶資料…`;
-        if(snap.size<250)break;
-        cursor=snap.docs[snap.docs.length-1];
-      }
-    }else balanceRows=Object.entries(store.ptContractBalances).map(([id,v])=>({id,...v})).filter(v=>v.branch===branch&&Number(v.pending)>0);
-    const valid=[];let unbound=0,mismatch=0,blockedAuto=0;
-    const nameCache=new Map();
-    for(let i=0;i<balanceRows.length;i+=20){
-      const chunk=balanceRows.slice(i,i+20);
-      const bound=await Promise.all(chunk.map(async c=>{
-        if(mode==='cloud'){const s=await db.collection('ptContractBindings').doc(c.id).get({source:'server'});return s.exists?s.data():null;}
-        return store.ptContractBindings[c.id]||null;
-      }));
-      if(request!==unclaimedRequest||branch!==$('branch').value)return;
-      for(let j=0;j<chunk.length;j++){
-        const c=chunk[j],b=bound[j];
-        if(!b){unbound+=Number(c.pending);continue;}
-        const phone=normalizedPhone(b.phone);
-        if(!phone||b.branch!==branch||b.contract!==c.contract||b.student!==c.student){mismatch++;continue;}
-        if(!(await autoBindingSafe(b,nameCache))){blockedAuto++;continue;}
-        valid.push({phone,name:c.student,contract:c.contract,pending:Number(c.pending),id:c.id});
-      }
-    }
-    const groups=new Map();
-    for(const c of valid){
-      if(!groups.has(c.phone))groups.set(c.phone,{phone:c.phone,name:c.name,points:0,contracts:[]});
-      const m=groups.get(c.phone);m.points+=c.pending;m.contracts.push({contract:c.contract,pending:c.pending,id:c.id});
-    }
-    const members=[...groups.values()].sort((a,b)=>a.name.localeCompare(b.name,'zh-TW')||a.phone.localeCompare(b.phone));
-    for(const m of members)m.contracts.sort((a,b)=>a.contract.localeCompare(b.contract));
-    if(request!==unclaimedRequest||branch!==$('branch').value)return;
-    unclaimedRows=members;unclaimedBranch=branch;
-    renderUnclaimed();
-    $('unclaimedStatus').textContent=`${branch}館：已查到 ${members.length} 位已歸戶待領會員、${valid.length} 張有待領點數的合約。${unbound?'另有 '+unbound+' 點尚未歸戶，請至合約歸戶處理。':''}${mismatch?'另有 '+mismatch+' 張合約資料不一致，已排除並需查核。':''}${blockedAuto?'另有 '+blockedAuto+' 張自動歸戶因同名變動暫停領點，請重新人工核對。':''}（僅查詢，尚未核銷）`;
-  }catch(e){
-    if(request===unclaimedRequest){unclaimedRows=[];unclaimedBranch='';$('unclaimedList').textContent='查詢失敗；本次沒有取得可靠的待領名單。';$('unclaimedStatus').textContent='讀取失敗：'+(e.message||String(e));}
-  }
+    const rows=await loadPTBalances(branch);
+    if(token!==unclaimedRequest||branch!==$('branch').value)return;
+    unclaimedRows=rows;unclaimedBranch=branch;renderUnclaimed();
+    $('unclaimedStatus').textContent=`${branch}館有 ${rows.length} 張合約尚有未領課程點數，按合約分開列出。`;
+  }catch(e){if(token===unclaimedRequest){$('unclaimedStatus').textContent='讀取失敗：'+(e.message||e);$('unclaimedList').textContent='請檢查網路後重試。';}}
 }
-async function openPTFromUnclaimed(phone){
+async function openPTFromUnclaimed(contract){
   if(unclaimedBranch!==$('branch').value)return;
-  const p=normalizedPhone(phone);if(!p)return;
-  tab('pt');$('ptPhone').value=p;
-  await searchPT();
+  tab('pt');$('ptQuery').value=contract;await searchPT();
 }
 async function searchPT(){
-  ptSelection=null;
-  const phone=normalizedPhone($('ptPhone').value),branch=$('branch').value;
-  if(!phone){showPTResult('請輸入正確的 10 碼手機號碼');return;}
+  if(busy)return;
+  ptSelection=null;ptSelected.clear();ptRows=[];ptLookupBranch='';
+  const term=$('ptQuery').value.trim().toLowerCase(),branch=$('branch').value;
+  if(term.length<2){$('ptResult').innerHTML='<div class="notice error">請至少輸入兩個字或兩碼合約編號。</div>';return;}
+  $('ptResult').textContent='正在查詢本館待領課程…';
   try{
-    fresh();const member=await getMember(phone);
-    if(!member){$('ptPhone').value='';showFeedbackModal('查無會員建檔','這個手機號碼尚未建立會員資料，請先至「會員管理」建檔，或由主管匯入會員名冊。','warning');return;}
-    const found=await getPTContractsForPhone(phone,branch);
-    if(!found.length){showPTResult(`${member.name}｜${branch}館目前沒有可核銷的課程點數。${found.blockedAuto?'有 '+found.blockedAuto+' 張舊自動歸戶合約因會員名冊出現同名等變動而暫停，請至合約歸戶以公司原系統確認手機。':''}其他館課程不會在這裡顯示。`);return;}
-    found.sort((a,b)=>a.contract.localeCompare(b.contract));
-    const total=found.reduce((v,x)=>v+x.pending,0);
-    ptSelection={phone,student:member.name,branch,total,contracts:found};
-    $('ptResult').innerHTML=`${found.blockedAuto?'<div class="notice error">另有 '+found.blockedAuto+' 張先前自動歸戶的合約因名冊變動暫停核銷，請人工查核。</div>':''}<div class="panel sub"><div class="contract-summary"><div><b style="font-size:24px">${escapeHTML(member.name)}</b><div class="contract-phone">${escapeHTML(phone.slice(0,4)+'***'+phone.slice(-3))}</div></div><div><div class="info">${escapeHTML(branch)}館可領課程點數</div><div class="contract-total">${total} 點</div></div></div><div class="scroll"><table class="contract-table"><thead><tr><th>合約訂單編號</th><th>待領點數</th></tr></thead><tbody>${found.map(v=>`<tr><td>${escapeHTML(v.contract)}</td><td>${v.pending} 點</td></tr>`).join('')}</tbody></table></div><p class="info">${escapeHTML(branch)}館已歸戶 ${found.length} 張合約。本次一次領取本館未核銷點數，其他館點數獨立查詢。</p><p class="notice">請先由櫃檯透過 LINE 實際發放 ${total} 點，確認成功後才按下方按鈕登記。</p><button class="btn green" style="font-size:21px;padding:17px 22px" onclick="redeemAllPT()">確認 LINE 已發放 ${total} 點 → 完成核銷</button></div>`;
-  }catch(e){showPTResult('查詢失敗：'+(e.message||String(e)));}
+    const all=await loadPTBalances(branch);
+    if(branch!==$('branch').value)return;
+    const found=all.filter(x=>String(x.student).toLowerCase().includes(term)||String(x.contract).toLowerCase().includes(term));
+    if(!found.length){$('ptResult').innerHTML=`<div class="notice">${escapeHTML(branch)}館沒有符合「${escapeHTML(term)}」且尚未領點的合約。請確認館別、搜尋條件與課程是否已匯入。</div>`;return;}
+    if(found.length>200){$('ptResult').innerHTML=`<div class="notice error">找到 ${found.length} 張合約，為避免勾錯，請輸入更完整的學員姓名或合約編號。</div>`;return;}
+    ptRows=found;ptLookupBranch=branch;
+    if(found.length===1)ptSelected.add(found[0].id);
+    renderPTSelection();
+  }catch(e){$('ptResult').textContent='課程查詢失敗：'+(e.message||e);}
 }
-async function redeemAllPT(){
+function choosePTContract(el){
+  if(!ptRows.some(x=>x.id===el.dataset.id))return;
+  if(el.checked)ptSelected.add(el.dataset.id);else ptSelected.delete(el.dataset.id);
+  updatePTSelectionTotal();
+}
+function updatePTSelectionTotal(){
+  if(!ptLookupBranch||ptLookupBranch!==$('branch').value)return;
+  const selected=ptRows.filter(x=>ptSelected.has(x.id));
+  const total=selected.reduce((sum,x)=>sum+Number(x.pending),0);
+  $('ptChosenTotal').textContent=`${selected.length} 張合約，共 ${total} 點`;
+  const different=new Set(selected.map(x=>tidyName(x.student))).size>1;
+  $('ptSelectedWarning').textContent=different?'選取了不同姓名的合約，請分別核銷；目前禁止合併。':selected.length>1?'多張合約請確認是同一個學員，才能合併發點。':'請依合約編號核對實際上課者。';
+  $('ptProceedBtn').disabled=!selected.length||different;
+}
+function renderPTSelection(){
+  const names=new Set(ptRows.map(x=>tidyName(x.student)));
+  $('ptResult').innerHTML=`<div class="panel sub"><div class="bar"><h3>找到 ${ptRows.length} 張本館待領合約</h3><span class="status">${escapeHTML(ptLookupBranch)}館</span></div><p class="info">核對後勾選要一次發點的合約；不同姓名禁止合併。同名不同合約也可能是不同人，<strong>不能直接全選</strong>。</p>${names.size<ptRows.length?'<div class="notice">同名學員出現多張合約，請依公司系統核對每張合約的實際持有人。</div>':''}<div class="scroll"><table class="contract-table"><thead><tr><th>選取</th><th>學員姓名</th><th>合約訂單編號</th><th>未領堂數／點數</th></tr></thead><tbody>${ptRows.map(c=>`<tr><td><input type="checkbox" style="width:23px;height:23px" data-id="${escapeHTML(c.id)}" onchange="choosePTContract(this)" ${ptSelected.has(c.id)?'checked':''} aria-label="選取合約 ${escapeHTML(c.contract)}"></td><td>${escapeHTML(c.student)}</td><td>${escapeHTML(c.contract)}</td><td><strong>${Number(c.pending)} 點</strong></td></tr>`).join('')}</tbody></table></div><div class="contract-summary" style="margin-top:16px"><div><div class="info">本次已選</div><strong id="ptChosenTotal">—</strong></div><button id="ptProceedBtn" class="btn primary" style="font-size:18px;padding:15px" onclick="startPTClaim()">核對完成 → 確認領點</button></div><p id="ptSelectedWarning" class="info"></p></div>`;
+  updatePTSelectionTotal();
+}
+function startPTClaim(){
+  if(busy||!ptSelected.size||ptLookupBranch!==$('branch').value)return;
+  const chosen=ptRows.filter(x=>ptSelected.has(x.id));
+  if(new Set(chosen.map(x=>tidyName(x.student))).size!==1){showFeedbackModal('不能合併不同姓名','請分開查詢及核銷。','warning');return;}
+  const total=chosen.reduce((sum,x)=>sum+Number(x.pending),0);
+  if(!Number.isInteger(total)||total<=0){showFeedbackModal('點數不正確','請重新查詢。','error');return;}
+  ptSelection={student:chosen[0].student,branch:ptLookupBranch,contracts:chosen.map(x=>({id:x.id,student:x.student,contract:x.contract,pending:Number(x.pending)})),total};
+  $('ptClaimPerson').textContent=ptSelection.student+'｜'+ptSelection.branch+'館';
+  $('ptClaimSummary').textContent=`${chosen.length} 張合約｜共 ${total} 點`;
+  $('ptClaimContracts').innerHTML=chosen.map(x=>`<div>${escapeHTML(x.contract)}：<b>${Number(x.pending)} 點</b></div>`).join('');
+  $('ptClaimModal').classList.remove('hidden');$('ptFinishBtn').focus();
+}
+function cancelPTClaim(){ptSelection=null;$('ptClaimModal').classList.add('hidden');}
+async function redeemSelectedPT(){
   if(busy||!ptSelection)return;
   const chosen=ptSelection;
-  if(chosen.branch!==$('branch').value){ptSelection=null;showFeedbackModal('請重新查詢','館別已切換，先前的課程點數不能在其他館核銷。','warning');return;}
-  if(chosen.contracts.length>400){showFeedbackModal('無法一次核銷','合約數量超出單次交易安全範圍，請主管協助處理。不是點數上限。','error');return;}
-  try{
-    const nameCache=new Map();
-    for(const c of chosen.contracts){
-      const b=mode==='cloud'?(await db.collection('ptContractBindings').doc(c.id).get({source:'server'})).data():store.ptContractBindings[c.id];
-      if(!b||!(await autoBindingSafe(b,nameCache)))throw new Error('名冊出現同名或會員身分變動，請先到合約歸戶人工核對，不能繼續發點');
-    }
-  }catch(e){ptSelection=null;showFeedbackModal('需要重新確認會員身分',e.message,'warning');return;}
-  if(!confirm(`請確認 LINE 已確實發放點數。\n${chosen.student}｜${chosen.phone}｜${chosen.branch}館\n${chosen.contracts.length} 張合約，共 ${chosen.total} 點。\n\n確定已在 LINE 成功發放 ${chosen.total} 點並登記核銷嗎？`))return;
+  if(chosen.branch!==$('branch').value){cancelPTClaim();showFeedbackModal('館別已更換','請重新查詢。','error');return;}
+  if(chosen.contracts.length>400){showFeedbackModal('合約數量過多','請分批核銷，這不是點數上限。','error');return;}
+  if(!confirm(`請確認已核對下列合約均屬於同一位學員，且 LINE 確實已發點：\n\n${chosen.student}｜${chosen.branch}館\n${chosen.contracts.map(x=>x.contract+'：'+x.pending+' 點').join('\n')}\n\n合計 ${chosen.total} 點。確認登記嗎？`))return;
   lock(true);
   try{
-    fresh();let points=0;const logId='pt__'+crypto.randomUUID();
+    fresh();const logId='pt__'+crypto.randomUUID();let points=0;
     if(mode==='cloud'){
-      const bRefs=chosen.contracts.map(x=>db.collection('ptContractBindings').doc(x.id));
-      const pRefs=chosen.contracts.map(x=>db.collection('ptContractBalances').doc(x.id));
+      const refs=chosen.contracts.map(x=>db.collection('ptContractBalances').doc(x.id));
       const logRef=db.collection('logs').doc(logId);
       await db.runTransaction(async tx=>{
-        const bindings=[],bal=[];
-        for(const ref of bRefs)bindings.push(await tx.get(ref));
-        for(const ref of pRefs)bal.push(await tx.get(ref));
+        const snapshots=[];for(const ref of refs)snapshots.push(await tx.get(ref));
         let sum=0;
-        for(let i=0;i<bal.length;i++){
-          const b=bindings[i],p=bal[i],old=chosen.contracts[i];
-          if(!b.exists||!p.exists||b.data().phone!==chosen.phone||b.data().contract!==old.contract||b.data().branch!==chosen.branch||p.data().student!==b.data().student||p.data().contract!==old.contract||p.data().branch!==chosen.branch||Number(p.data().pending)!==old.pending)
-            throw new Error('合約歸屬或待領點數已改變，請重新查詢');
-          sum+=Number(p.data().pending);
+        for(let i=0;i<snapshots.length;i++){
+          const d=snapshots[i],old=chosen.contracts[i];
+          if(!d.exists||d.data().branch!==chosen.branch||d.data().contract!==old.contract||d.data().student!==chosen.student||Number(d.data().pending)!==old.pending)throw new Error('待領點數或合約資料已改變，請重新查詢');
+          sum+=old.pending;
         }
-        if(sum!==chosen.total||sum<=0)throw new Error('點數發生變更，請重新查詢');
-        for(let i=0;i<pRefs.length;i++)tx.update(pRefs[i],{pending:0,redeemed:firebase.firestore.FieldValue.increment(chosen.contracts[i].pending),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),lastRedeemLogId:logId});
-        tx.set(logRef,logData('PT',chosen.student,chosen.phone,sum,{coach:'',claimId:logId,poolId:chosen.contracts[0].id,contractIds:chosen.contracts.map(x=>x.id),ref:`${chosen.contracts.map(x=>x.contract).join('、')}`}));
+        if(sum!==chosen.total||sum<1)throw new Error('點數不一致，請重新查詢');
+        for(let i=0;i<refs.length;i++)tx.update(refs[i],{pending:0,redeemed:firebase.firestore.FieldValue.increment(chosen.contracts[i].pending),lastRedeemLogId:logId,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        tx.set(logRef,logData('PT',chosen.student,'',sum,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),ref:chosen.contracts.map(x=>x.contract).join('、')}));
         points=sum;
       });
     }else{
-      for(const x of chosen.contracts){const p=store.ptContractBalances[x.id],b=store.ptContractBindings[x.id];if(!p||!b||b.phone!==chosen.phone||b.branch!==chosen.branch||p.branch!==chosen.branch||p.pending!==x.pending)throw new Error('合約點數或歸戶已變更，請重新查詢');}
+      for(const c of chosen.contracts){const current=store.ptContractBalances[c.id];if(!current||current.student!==c.student||current.branch!==chosen.branch||current.contract!==c.contract||Number(current.pending)!==c.pending)throw new Error('資料已變更，請重新查詢');}
       points=chosen.total;
-      for(const x of chosen.contracts){const p=store.ptContractBalances[x.id];p.redeemed=(p.redeemed||0)+p.pending;p.pending=0;p.lastRedeemLogId=logId;}
-      store.logs[logId]=logData('PT',chosen.student,chosen.phone,points,{coach:'',claimId:logId,poolId:chosen.contracts[0].id,contractIds:chosen.contracts.map(x=>x.id),ref:chosen.contracts.map(x=>x.contract).join('、')});saveDemo();
+      for(const c of chosen.contracts){const current=store.ptContractBalances[c.id];current.pending=0;current.redeemed=(Number(current.redeemed)||0)+c.pending;current.lastRedeemLogId=logId;}
+      store.logs[logId]=logData('PT',chosen.student,'',points,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),ref:chosen.contracts.map(x=>x.contract).join('、')});saveDemo();
     }
-    ptSelection=null;$('ptPhone').value='';
-    await searchPTAfterDone();
-    showFeedbackModal('課程點數核銷完成',`${chosen.student}｜${chosen.branch}館\n已確認 LINE 發放點數，並將 ${chosen.contracts.length} 張合約的待領點數登記完成。`,'ok',[{label:'核銷點數',value:points+' 點'},{label:'合約數',value:chosen.contracts.length}]);
-  }catch(e){showFeedbackModal('課程核銷未完成',e.message||String(e),'error');}
+    cancelPTClaim();ptRows=[];ptSelected.clear();ptLookupBranch='';$('ptQuery').value='';
+    $('ptResult').textContent='本次已登記核銷，請輸入下一位學員姓名或合約編號。';
+    if(!$('view-unclaimed').classList.contains('hidden'))loadUnclaimed();
+    refreshStats();
+    showFeedbackModal('課程點數核銷完成',`${chosen.student}｜${chosen.branch}館\n已依 ${chosen.contracts.length} 張合約登記 LINE 發點完成。`,'ok',[{label:'已核銷',value:points+' 點'},{label:'合約',value:chosen.contracts.length+' 張'}]);
+  }catch(e){cancelPTClaim();ptRows=[];ptSelected.clear();$('ptResult').textContent='請重新查詢本館最新點數。';showFeedbackModal('核銷登記失敗',e.message||String(e),'error');}
   finally{lock(false);}
 }
-async function searchPTAfterDone(){$('ptResult').textContent='已完成本次核銷。輸入下一位會員手機即可查詢。';refreshStats();}
-async function getContractBalance(contract,branch){const id=await contractDocId(contract,branch);let stat,binding;
-  if(mode==='cloud'){
-    const [s,b]=await Promise.all([db.collection('ptContractBalances').doc(id).get({source:'server'}),db.collection('ptContractBindings').doc(id).get({source:'server'})]);
-    stat=s.exists?s.data():null;binding=b.exists?b.data():null;
-  }else{stat=store.ptContractBalances[id]||null;binding=store.ptContractBindings[id]||null;}
-  return {id,stat,binding};
-}
-async function lookupContract(){
-  pendingContractResult=null;
-  const contract=normContract($('contractLookup').value),branch=$('branch').value;
-  if(!contract){$('contractLookupResult').textContent='請輸入合約訂單編號';return;}
-  try{
-    fresh();const {id,stat,binding}=await getContractBalance(contract,branch);
-    if(!stat||stat.contract!==contract||stat.branch!==branch){$('contractLookupResult').textContent=`${branch}館查無此合約。請確認作業館別並匯入對應館別的課程執行報表。`;return;}
-    if(binding){
-      if(binding.branch!==branch)throw new Error('合約綁定的館別不一致，請檢查');
-      if(!isAutoBinding(binding)){$('contractLookupResult').innerHTML=`<div class="notice ok"><b>此合約已人工確認歸戶，不允許直接覆蓋</b><p class="contract-info">合約：${escapeHTML(contract)}<br>學員：${escapeHTML(stat.student)}<br>會員手機：${escapeHTML(binding.phone.slice(0,4)+'***'+binding.phone.slice(-3))}<br>尚未核銷：${Number(stat.pending)} 點</p></div>`;return;}
-      const stillUnique=await autoBindingSafe(binding,new Map());
-      $('contractLookupResult').innerHTML=`<div class="notice ${stillUnique?'ok':'error'}"><b>${stillUnique?'目前為姓名唯一自動歸戶':'同名或名冊資料變動，已暫停該合約核銷'}</b><p class="contract-info">合約：${escapeHTML(contract)}<br>簽到姓名：${escapeHTML(stat.student)}<br>先前比對手機：${escapeHTML(binding.phone.slice(0,4)+'***'+binding.phone.slice(-3))}<br>剩餘待領：${Number(stat.pending)} 點</p></div>`;
-      if(Number(stat.redeemed)>0){$('contractLookupResult').innerHTML+='<div class="notice error">此合約已經有核銷歷史，不允許直接改綁其他會員；請由主管先查核歷史紀錄。</div>';return;}
-    }
-    pendingContractResult={id,contract,student:stat.student,branch,autoBinding:binding&&isAutoBinding(binding)?binding:null};
-    $('contractLookupResult').innerHTML=`<div class="contract-identity"><b>待確認合約</b><br>館別：<strong>${escapeHTML(branch)}館</strong><br>合約編號：<strong>${escapeHTML(contract)}</strong><br>簽到表姓名：<strong>${escapeHTML(stat.student)}</strong><br>累計有效簽到：${Number(stat.total)} 堂｜尚未領取：${Number(stat.pending)} 點</div><div class="contract-bind-box"><p><b>請至公司原系統以此合約編號核對手機</b>，再輸入下方欄位。</p><label for="contractMemberPhone">合約實際所屬會員手機<input id="contractMemberPhone" inputmode="numeric" maxlength="10" placeholder="09XXXXXXXX" oninput="checkContractMember()"></label><div id="contractMemberCheck" class="info">請先輸入手機查驗會員姓名</div><label class="contract-check"><input type="checkbox" id="contractBindConfirm"><span>我已在<strong>公司原系統</strong>核對此合約對應的會員手機，確認合約與本人相符。</span></label><button class="btn green" onclick="bindContract()">確認歸戶（此合約以後自動辨識）</button></div>`;
-  }catch(e){$('contractLookupResult').textContent='查詢失敗：'+(e.message||String(e));}
-}
-async function checkContractMember(){
-  const target=$('contractMemberCheck'),phone=normalizedPhone($('contractMemberPhone').value);
-  if(!phone){target.textContent='請輸入完整 10 碼手機';return;}
-  try{
-    const m=await getMember(phone);
-    if(!m){target.innerHTML='<span class="badText">此手機不在會員名冊，請先建檔再歸戶。</span>';return;}
-    const same=tidyName(m.name)===pendingContractResult?.student;
-    target.innerHTML=`<b class="${same?'okText':'badText'}">名冊：${escapeHTML(m.name)}｜${escapeHTML(phone.slice(0,4)+'***'+phone.slice(-3))}</b>${same?'（姓名符合，仍須核對原公司系統）':'（姓名不一致：禁止自動歸戶，請先查明）'}`;
-  }catch(e){target.textContent='查詢失敗：'+(e.message||String(e));}
-}
-async function bindContract(){
-  try{
-    fresh();if(!pendingContractResult)throw new Error('請先查詢欲歸戶的合約');
-    const phone=normalizedPhone($('contractMemberPhone')?.value);
-    if(!phone)throw new Error('請輸入正確會員手機');
-    if(!$('contractBindConfirm')?.checked)throw new Error('請先確認已使用公司原系統核對合約與手機');
-    const {id,contract,student,branch}=pendingContractResult,member=await getMember(phone);
-    if(branch!==$('branch').value)throw new Error('館別已切換，請重新查詢合約');
-    if(!member)throw new Error('此手機尚未建立會員資料');
-    if(tidyName(member.name)!==student)throw new Error('名冊姓名與簽到表不一致，不能自動歸戶；請先核對資料');
-    if(!confirm(`請再次確認：\n館別 ${branch}館\n合約 ${contract}\n簽到姓名 ${student}\n公司系統查得手機 ${phone}\n\n歸戶後不可從網頁直接改綁其他會員，確定嗎？`))return;
-    lock(true);
-    if(mode==='cloud'){
-      const statRef=db.collection('ptContractBalances').doc(id),bindRef=db.collection('ptContractBindings').doc(id),memberRef=db.collection('members').doc(phone);
-      await db.runTransaction(async tx=>{
-        const [stat,bound,mem]=await Promise.all([tx.get(statRef),tx.get(bindRef),tx.get(memberRef)]);
-        if(!stat.exists||stat.data().contract!==contract||stat.data().student!==student||stat.data().branch!==branch)throw new Error('合約資料已更動，請重新查詢');
-        if(bound.exists && (!isAutoBinding(bound.data()) || Number(stat.data().redeemed)>0))throw new Error('此合約已人工綁定或已有核銷歷史，不能更動');
-        if(!mem.exists||tidyName(mem.data().name)!==student)throw new Error('會員資料不一致');
-        tx.set(bindRef,{contract,student,phone,branch,boundBy:user.uid,boundAt:firebase.firestore.FieldValue.serverTimestamp(),verifiedInCompanySystem:true,matchMethod:'manual'});
-      });
-    }else{
-      const old=store.ptContractBindings[id],stat=store.ptContractBalances[id];
-      if(old&&(!isAutoBinding(old)||Number(stat?.redeemed)>0))throw new Error('此合約已人工確認或已有核銷歷史，不可更改');
-      store.ptContractBindings[id]={contract,student,phone,branch,boundBy:'DEMO',boundAt:new Date().toISOString(),verifiedInCompanySystem:true,matchMethod:'manual'};saveDemo();
-    }
-    pendingContractResult=null;await lookupContract();await loadContractQueue();
-    showFeedbackModal('合約歸戶成功',`${student}｜${branch}館\n合約 ${contract}\n已連結至核對過的會員手機；後續課程匯入可持續累計，無須重新綁定。`,'ok');
-  }catch(e){showFeedbackModal('合約歸戶未完成',e.message||String(e),'error');}
-  finally{lock(false);}
-}
-async function loadContractQueue(){
-  const el=$('contractQueue');el.textContent='正在讀取未歸戶或需重核的合約…';
-  try{
-    fresh();const branch=$('branch').value;
-    const all=await getUnboundBalances(branch);
-    // 自動歸戶的同名狀態可能在後續匯入會員名冊後改變，這類合約同樣列為人工待確認。
-    let changed=[];
-    const cache=new Map();
-    if(mode==='demo'){
-      for(const [id,b] of Object.entries(store.ptContractBindings)){
-        if(b.branch!==branch||!isAutoBinding(b))continue;
-        const stat=store.ptContractBalances[id];
-        if(!stat||Number(stat.pending)<=0)continue;
-        if(!(await autoBindingSafe(b,cache)))changed.push({id,...stat,needsReverify:true});
-      }
-    }else{
-      // 雲端以合約來源逐筆核對，避免將未取回的合約顯示為已無異常。
-      let cursor=null;
-      while(true){
-        let q=db.collection('ptContractBindings').where('branch','==',branch).limit(250);
-        if(cursor)q=q.startAfter(cursor);
-        const snap=await q.get({source:'server'});
-        for(const d of snap.docs){
-          const b=d.data();if(!isAutoBinding(b))continue;
-          if(await autoBindingSafe(b,cache))continue;
-          const st=await db.collection('ptContractBalances').doc(d.id).get({source:'server'});
-          if(st.exists&&Number(st.data().pending)>0)changed.push({id:d.id,...st.data(),needsReverify:true});
-        }
-        if(snap.size<250)break;
-        cursor=snap.docs[snap.docs.length-1];
-      }
-    }
-    const list=[...all,...changed].sort((a,b)=>String(a.student).localeCompare(String(b.student),'zh-TW'));
-    if(!list.length){el.textContent='本館目前沒有需要人工確認的合約。';return;}
-    const detail=await Promise.all(list.map(async c=>{
-      if(c.needsReverify)return '姓名出現重複／名冊有變動';
-      const matches=await getNameMatches(c.student,cache);
-      return matches.length===0?'會員名冊查無此姓名':matches.length>1?'同名會員，需查訂單手機':'可按上方重新自動比對';
-    }));
-    el.innerHTML=`<p class="info">本館需人工確認／重新比對的合約 ${list.length} 張，不用逐堂處理。</p><table><thead><tr><th>合約編號</th><th>簽到姓名</th><th>待領點數</th><th>原因</th><th>操作</th></tr></thead><tbody>${list.map((c,i)=>`<tr><td>${escapeHTML(c.contract)}</td><td>${escapeHTML(c.student)}</td><td>${Number(c.pending)}</td><td>${escapeHTML(detail[i])}</td><td><button class="btn" data-pt-contract="${escapeHTML(c.contract)}" onclick="openContractFromQueue(this.dataset.ptContract)">核對合約</button></td></tr>`).join('')}</tbody></table>`;
-  }catch(e){el.textContent='查詢失敗：'+(e.message||String(e));}
-}
-async function openContractFromQueue(c){$('contractLookup').value=c;await lookupContract();$('contractLookupResult').scrollIntoView({behavior:'smooth',block:'center'});}
 
 function col(headers,terms){return headers.findIndex(x=>terms.some(z=>String(x).toLowerCase().includes(z.toLowerCase())));}
 async function readSheet(input){if(typeof XLSX==='undefined')throw new Error('Excel 解析器尚未載入，請檢查網路');const f=$(input).files[0];if(!f)throw new Error('請先選擇 Excel／CSV 檔案');const data=await f.arrayBuffer();const book=XLSX.read(data,{type:'array'});return XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:'',raw:false});}
-async function importMemberFile(){try{requireManager();fresh();const rows=await readSheet('memberFile');const heads=rows[0]||[],p=col(heads,['手機','電話','phone']),n=col(heads,['顧客名稱','姓名','name']);if(p<0||n<0)throw new Error('名冊須包含手機與姓名欄位');if(col(heads,['教練','簽到時間'])>=0)throw new Error('這看起來是教練簽到表，禁止當作會員名冊匯入');const map=new Map();let skipped=0;for(const r of rows.slice(1)){const phone=normalizedPhone(r[p]),name=tidyName(r[n]);if(phone&&name)map.set(phone,{phone,name});else skipped++;}if(!map.size)throw new Error('沒有符合格式的會員');if(!confirm(`準備匯入 ${map.size} 筆有效會員（略過 ${skipped} 筆）。\n不刪除原有會員與核銷紀錄，確認執行？`))return;lock(true);let done=0;for(let i=0;i<map.size;i+=300){const chunk=[...map.values()].slice(i,i+300);if(mode==='cloud'){const batch=db.batch();for(const x of chunk)batch.set(db.collection('members').doc(x.phone),{...x,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});await batch.commit();}else for(const x of chunk)store.members[x.phone]={...(store.members[x.phone]||{}),...x};done+=chunk.length;$('importResult').textContent=`已確認儲存 ${done}/${map.size} 筆`; }if(mode==='demo')saveDemo();$('importResult').textContent=`名冊匯入完成：${done} 筆，跳過無效 ${skipped} 筆。正在自動比對目前館別尚未歸戶合約…`;
-let matchStats=null,matchErr='';try{matchStats=await runAutoMatch($('branch').value);showAutoMatchStats($('branch').value,matchStats);}catch(e){matchErr=e.message||String(e);}
-refreshStats();showFeedbackModal('會員名冊匯入完成',`名冊有效資料已儲存。目前館別的合約自動比對：${matchErr?'未完成（'+matchErr+'）':'完成'}。其他館已有課程時，請切換館別按「重新比對」。`,'ok',[{label:'成功寫入',value:done},{label:'無效跳過',value:skipped},{label:'自動歸戶合約',value:matchStats?.matched??'—'},{label:'待確認',value:matchStats?matchStats.ambiguous+matchStats.missing:'—'}]);}catch(e){fail(e,'importResult');showFeedbackModal('會員名冊匯入未完成',e?.message||String(e),'error');}finally{lock(false);}}
+async function importMemberFile(){try{requireManager();fresh();const rows=await readSheet('memberFile');const heads=rows[0]||[],p=col(heads,['手機','電話','phone']),n=col(heads,['顧客名稱','姓名','name']);if(p<0||n<0)throw new Error('名冊須包含手機與姓名欄位');if(col(heads,['教練','簽到時間'])>=0)throw new Error('這看起來是教練簽到表，禁止當作會員名冊匯入');const map=new Map();let skipped=0;for(const r of rows.slice(1)){const phone=normalizedPhone(r[p]),name=tidyName(r[n]);if(phone&&name)map.set(phone,{phone,name});else skipped++;}if(!map.size)throw new Error('沒有符合格式的會員');if(!confirm(`準備匯入 ${map.size} 筆有效會員（略過 ${skipped} 筆）。\n不刪除原有會員與核銷紀錄，確認執行？`))return;lock(true);let done=0;for(let i=0;i<map.size;i+=300){const chunk=[...map.values()].slice(i,i+300);if(mode==='cloud'){const batch=db.batch();for(const x of chunk)batch.set(db.collection('members').doc(x.phone),{...x,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});await batch.commit();}else for(const x of chunk)store.members[x.phone]={...(store.members[x.phone]||{}),...x};done+=chunk.length;$('importResult').textContent=`已確認儲存 ${done}/${map.size} 筆`; }if(mode==='demo')saveDemo();$('memberFile').value='';$('importResult').textContent=`會員名冊匯入完成：${done} 筆，略過 ${skipped} 筆。名冊僅供打卡與身體檢測查驗，不影響課程點數。`;showFeedbackModal('會員名冊匯入完成','手機名冊只用於全館打卡及身體檢測；課程執行不需要會員名冊。','ok',[{label:'成功寫入',value:done},{label:'無效略過',value:skipped}]);}catch(e){fail(e,'importResult');showFeedbackModal('會員名冊匯入未完成',e?.message||String(e),'error');}finally{lock(false);}}
 // 用原始 11 欄報表保留合約編號；舊版雙區報表若沒有合約欄位則跳過不發點。
 function extractCourseRows(rows){
   const h=(rows[0]||[]).map(x=>String(x||'').trim());
@@ -775,7 +542,7 @@ async function importPTFile(){
     const {results,invalid,is11}=extractCourseRows(rows);
     if(!results.length)throw new Error('沒有可匯入且具合約訂單編號的有效課程；請檢查報表欄位。無合約編號的課程不能安全歸戶。');
     const branch=$('branch').value;
-    if(!confirm(`【${branch}館】偵測 ${results.length} 堂有效簽到（${invalid} 列資料不完整已排除）。\n將依「館別＋合約編號＋學員＋教練＋簽到時間」去重。\n匯入後會以完整會員名冊自動歸戶姓名唯一的合約；同名異人及查無名冊才人工核對。繼續？`))return;
+    if(!confirm(`【${branch}館】偵測 ${results.length} 堂有效簽到（${invalid} 列資料不完整已排除）。\n將依「館別＋合約編號＋學員＋教練＋簽到時間」去重。\n課程不需會員名冊或手機，領點時依合約編號核對。繼續？`))return;
     lock(true);locked=true;let added=0,duplicate=0,error=0;const exceptions=[];
     for(const [i,s] of results.entries()){
       const id=await contractDocId(s.contract,branch),fp=await hash([branch,s.contract,s.student,s.coach,s.time,s.date,s.kind].join('|'));
@@ -804,15 +571,12 @@ async function importPTFile(){
       if(i%20===0)$('importResult').textContent=`匯入進度 ${i+1}/${results.length}｜新增 ${added}｜重複 ${duplicate}｜異常 ${error}`;
     }
     if(mode==='demo')saveDemo();
-    $('importResult').textContent=`${branch}館課程儲存完成：新增 ${added} 堂、重複 ${duplicate} 堂、資料異常 ${error+invalid} 列。正在自動比對會員名冊…`;
-    let matchStats=null,matchErr='';
-    try{matchStats=await runAutoMatch(branch);showAutoMatchStats(branch,matchStats);}catch(e){matchErr=e.message||String(e);}
-    const needManual=matchStats?matchStats.ambiguous+matchStats.missing:0;
-    $('importResult').textContent=`${branch}館：新增 ${added} 堂、重複 ${duplicate} 堂、資料異常 ${error+invalid} 列。自動歸戶 ${matchStats?.matched??'未知'} 張合約；待確認 ${needManual} 張。`;
-    showFeedbackModal(error||invalid||matchErr?'課程匯入部分完成':'教練課程匯入完成',`課程歸屬館別：${branch}館，每筆有效簽到計 1 點。${matchErr?'自動比對失敗：'+matchErr:'姓名唯一已自動歸戶；同名或查無名冊才需人工核對。'}${exceptions.length?'\n異常示例：'+exceptions.join('；'):''}`,error||invalid||matchErr?'warning':'ok',[
-      {label:'新增有效堂數',value:added},{label:'略過重複',value:duplicate},{label:'自動歸戶合約',value:matchStats?.matched??'—'},
-      {label:'需人工確認',value:matchStats?needManual:'—'},{label:'異常',value:error+invalid+(matchStats?.failed||0)}
-    ]);  }catch(e){$('importResult').textContent='匯入失敗：'+(e.message||String(e));showFeedbackModal('課程匯入未完成',e.message||String(e),'error');}
+    $('ptFile').value=''; // 這次匯入作業已完成；讓下一份檔案可以直接選取
+    $('importResult').textContent=`${branch}館課程匯入：新增 ${added} 堂，重複 ${duplicate} 堂，異常 ${error+invalid} 列。請至「本館課程待領清單」查詢。`;
+    showFeedbackModal(error||invalid?'課程匯入部分完成':'課程匯入完成',`${branch}館課程按合約累計，每堂有效簽到 1 點，不需手機或歸戶。${exceptions.length?'\n異常：'+exceptions.join('；'):''}`,error||invalid?'warning':'ok',[
+      {label:'新增有效堂數',value:added},{label:'略過重複',value:duplicate},{label:'資料異常',value:error+invalid}
+    ]);
+  }catch(e){$('importResult').textContent='匯入失敗：'+(e.message||String(e));showFeedbackModal('課程匯入未完成',e.message||String(e),'error');}
   finally{if(locked)lock(false);}
 }
 
@@ -823,6 +587,14 @@ async function loadLogs(reset=true){try{fresh();if(reset){logCursor=null;loadedL
 function csvCell(x){const s=String(x??'');return '"'+(/[=+\-@]/.test(s.charAt(0))?"'"+s:s).replace(/"/g,'""')+'"';}
 function downloadCSV(rows){const columns=['createdAt','branch','name','phone','type','points','week','coach','ref','operator','id'];const names=['核銷時間','館別','會員姓名','會員手機','任務項目','點數','週次','教練','交易編號','操作帳號','流水ID'];const out=[names.map(csvCell).join(',')];for(const x of rows){const o={...x,type:types[x.type]||x.type,createdAt:timestamp(x.createdAt)};out.push(columns.map(k=>csvCell(o[k])).join(','));}const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GK_全館核銷紀錄_${taipeiDate()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 async function exportLogs(){try{fresh();lock(true);let arr=[];if(mode==='demo')arr=Object.entries(store.logs).map(([id,x])=>({id,...x}));else{let last=null;while(true){let q=db.collection('logs').orderBy('createdAt','desc').limit(400);if(last)q=q.startAfter(last);const s=await q.get({source:'server'});arr.push(...s.docs.map(x=>({id:x.id,...x.data()})));$('logsSummary').textContent=`正在由雲端匯出：已取得 ${arr.length} 筆`;if(s.size<400)break;last=s.docs[s.docs.length-1];}}downloadCSV(arr.filter(filterLog));$('logsSummary').textContent=`已匯出 ${arr.filter(filterLog).length} 筆核銷紀錄（符合目前篩選）。`; }catch(e){$('logsSummary').textContent='匯出失敗：'+e.message;}finally{lock(false);}}
-async function refreshStats(){if(!$('stats'))return;let mc='—',pt='—';try{if(mode==='demo'){mc=Object.keys(store.members).length;pt=Object.entries(store.ptContractBalances).filter(([id,b])=>b.branch===$('branch').value&&store.ptContractBindings[id]).reduce((a,[id,b])=>a+(Number(b.pending)||0),0);} }catch(e){}$('stats').innerHTML=`<div class="stat">跨館打卡限制<b>每週 1 次</b><small>全部館別共用唯一核銷鍵</small></div><div class="stat">身體檢測限制<b>活動 1 次</b><small>同會員無法跨館重複領點</small></div><div class="stat">${mode==='demo'?'示範會員數':'會員查詢'}<b>${mc}</b><small>${mode==='cloud'?'依實際查驗讀取雲端':'虛構資料'}</small></div><div class="stat">${mode==='demo'?'本館已歸戶待領點數':'本館已歸戶待領點數'}<b>${pt}</b><small>${mode==='cloud'?'請至「已歸戶・尚未領點」查詢':'未歸戶不計入本數字'}</small></div>`;}
+async function refreshStats(){
+  if(!$('stats'))return;let mc='—',pt='—';
+  if(mode==='demo'){
+    mc=Object.keys(store.members||{}).length;
+    pt=Object.values(store.ptContractBalances||{}).filter(v=>v.branch===$('branch').value).reduce((n,v)=>n+(Number(v.pending)||0),0);
+  }
+  $('stats').innerHTML=`<div class="stat">跨館打卡限制<b>每週 1 次</b><small>全館共同核銷</small></div><div class="stat">身體檢測限制<b>活動 1 次</b><small>全館不得重複領取</small></div><div class="stat">${mode==='demo'?'示範會員數':'會員名冊'}<b>${mc}</b><small>僅用於打卡及檢測</small></div><div class="stat">本館課程待領點數<b>${pt}</b><small>${mode==='cloud'?'請到待領清單取得最新數字':'不需會員歸戶'}</small></div>`;
+}
+
 </script>
 </body></html>
