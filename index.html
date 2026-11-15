@@ -91,6 +91,16 @@ fieldset[disabled]{opacity:.55}
 .coaches-list{line-height:1.65;color:#b9e2ff}
 @media(max-width:600px){.unclaimed-table th,.unclaimed-table td{font-size:13px}}
 
+/* v1.14.2：將會員姓名更正移至後台；前台只新增新會員。 */
+.member-edit-lookup{max-width:650px}
+.member-edit-profile{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#173046;border:1px solid #3e6684;border-radius:12px;padding:16px;margin:14px 0}
+.member-edit-profile .member-edit-name{font-weight:800;font-size:22px;overflow-wrap:anywhere}
+.member-edit-profile .btn{margin-left:auto}
+.member-edit-form{max-width:650px;padding:15px;border:1px solid #456782;border-radius:12px;background:#1b3048;margin-top:12px}
+.member-edit-form input{margin:6px 0 14px}
+.member-edit-step{display:inline-block;background:#27435e;color:#fbe0a5;border-radius:20px;padding:3px 11px;font-weight:800;font-size:12px;margin-bottom:10px}
+.member-edit-result{min-height:25px;margin:8px 0}
+@media(max-width:600px){.member-edit-profile .btn{margin-left:0;width:100%}.member-edit-profile{align-items:flex-start}}
 /* v1.14.1：主畫面四個入口；後台功能集中於第二層選單 */
 .primary-nav{gap:9px;margin:16px 0 14px}
 .primary-nav .tab{padding:12px 17px;min-height:48px}
@@ -106,7 +116,7 @@ fieldset[disabled]{opacity:.55}
 @media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.1</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.2</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
@@ -125,6 +135,7 @@ fieldset[disabled]{opacity:.55}
     <div><h2>後台管理</h2><p class="info">請選擇要處理的後台項目。</p></div>
   </div>
   <nav class="backend-tabs" aria-label="後台管理功能">
+    <button type="button" class="backend-tab" data-backend-tab="member-edit" onclick="tab('member-edit')">會員姓名修改</button>
     <button type="button" class="backend-tab" data-backend-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button>
     <button type="button" class="backend-tab" data-backend-tab="import" onclick="tab('import')">Excel 匯入</button>
     <button type="button" class="backend-tab" data-backend-tab="logs" onclick="tab('logs')">全館核銷後台</button>
@@ -212,9 +223,31 @@ fieldset[disabled]{opacity:.55}
 <div id="unclaimedList" class="scroll"></div>
 <p class="notice">點「前往查詢」只會帶入該張訂單，若同一學員有多張合約，可改用姓名搜尋後勾選全部正確合約。</p>
 </section>
-<section id="view-members" class="panel hidden"><h2>會員管理</h2><p class="info">全館共用會員資料，手機是永久識別鍵；員工可新增會員或更正同一手機的姓名，不能刪除會員或改變原有手機。員工須輸入完整手機查詢單筆會員，不可下載全館名冊。</p><div class="grid"><label>姓名<input id="memberName" maxlength="80" placeholder="會員姓名"></label><label>手機<input id="memberPhone" inputmode="numeric" placeholder="09XXXXXXXX"></label></div><div class="buttons"><button class="btn primary" onclick="saveMember()">新增或更新會員姓名</button><button class="btn" onclick="searchMembers()">查詢會員</button></div><label id="memberSearchLabel">搜尋會員（主管可搜尋姓名；員工請輸入完整手機）<input id="memberFilter" placeholder="員工請輸入完整手機號碼"></label><div id="memberList" class="scroll"></div>
+<section id="view-members" class="panel hidden"><h2>會員管理｜新增會員</h2><p class="info">前台僅新增尚未建檔的會員，全館共用手機作為唯一識別鍵。若手機已存在，<strong>不會覆蓋原姓名</strong>；請到「後台管理 → 會員姓名修改」進行更正。員工須以完整手機查詢單筆會員，不可下載全館名冊。</p><div class="grid"><label>新會員姓名<input id="memberName" maxlength="80" placeholder="會員姓名"></label><label>新會員手機<input id="memberPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="09XXXXXXXX"></label></div><div class="buttons"><button class="btn primary" onclick="saveMember()">確認新增會員</button><button class="btn" onclick="searchMembers()">查詢會員</button></div><label id="memberSearchLabel">搜尋會員（主管可搜尋姓名；員工請輸入完整手機）<input id="memberFilter" placeholder="員工請輸入完整手機號碼"></label><div id="memberList" class="scroll"></div>
 <div class="export-controls"><button data-export-only="true" class="btn green" onclick="exportMembers()">主管匯出全館會員名冊（Excel，完整手機）</button></div>
 <p class="export-hint">畫面手機號碼會遮蔽中間四碼；主管匯出檔會保留完整手機號碼。<strong>會員名冊屬於全館共用資料，不依作業館別切分。</strong></p></section>
+<section id="view-member-edit" class="panel hidden">
+  <h2>會員姓名修改</h2>
+  <p class="info">此頁供已建檔會員更正姓名。<strong>必須先輸入完整手機號碼並查到現有姓名，才可進行修改。</strong> 不修改手機號碼，不刪除會員，也不清除既有領點紀錄。</p>
+  <div class="member-edit-lookup">
+    <div class="member-edit-step">步驟 1 ／ 查詢會員</div>
+    <label for="memberEditPhone">會員完整手機號碼</label>
+    <input id="memberEditPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="09XXXXXXXX" oninput="invalidateMemberEdit()" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupMemberForEdit()}">
+    <button class="btn primary" type="button" onclick="lookupMemberForEdit()">查詢現有姓名</button>
+    <p id="memberEditStatus" class="info member-edit-result" role="status" aria-live="polite">請先輸入 10 碼手機號碼。</p>
+  </div>
+  <div id="memberEditFound" class="member-edit-profile hidden">
+    <div><div class="info">目前登記姓名</div><div id="memberEditCurrentName" class="member-edit-name"></div><div id="memberEditMaskedPhone" class="info"></div></div>
+    <button class="btn" type="button" onclick="startMemberNameEdit()">修改姓名</button>
+  </div>
+  <div id="memberEditForm" class="member-edit-form hidden">
+    <div class="member-edit-step">步驟 2 ／ 輸入新姓名</div>
+    <label for="memberEditNewName">更正後姓名</label>
+    <input id="memberEditNewName" maxlength="80" autocomplete="off" placeholder="請輸入正確姓名">
+    <div class="buttons"><button class="btn primary" type="button" onclick="confirmMemberNameEdit()">確認修改姓名</button><button class="btn" type="button" onclick="cancelMemberNameEdit()">取消修改</button></div>
+    <p class="info">提交前會再次顯示舊姓名與新姓名，供你核對。</p>
+  </div>
+</section>
 <section id="view-import" class="panel hidden"><h2>資料批次匯入（主管權限）</h2><div class="grid"><div class="panel sub"><h3>一、匯入公司會員名冊</h3><p class="info">需要「姓名／顧客名稱」及「手機／電話」欄位；僅供運動打卡與身體檢測，全館共用，不依作業館別分組；新增／更新不會清除核銷歷史。</p><input id="memberFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importMemberFile()">預覽名冊並確認匯入</button></div><div class="panel sub"><h3>二、匯入教練課簽到報表</h3><p class="info">依上方選定館別匯入公司 11 欄課程執行報表，逐堂去重，依合約訂單編號建立待領點數；<strong>不需會員名冊，也不必歸戶</strong>。</p><input id="ptFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importPTFile()">預覽課程並確認匯入</button></div></div><p class="notice">重要：匯入成功訊息只會在雲端寫入完成後出現。大量匯入可能需要時間；請勿關閉頁面。系統不會替未存檔資料顯示成功。</p><div id="importResult" class="info"></div></section>
 <section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆；CSV 匯出只包含目前作業館別，並要求主管驗證。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button data-export-only="true" class="btn green" onclick="exportLogs()">主管匯出目前作業館別紀錄（CSV）</button></div><div class="export-scope">核銷紀錄可以在後台查看全部館別，但下載時固定只包含上方「作業館別」目前選取的館別（可套用項目／日期篩選）。</div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
 <section id="view-staff-admin" class="panel hidden">
@@ -232,6 +265,7 @@ const CFG=window.GK_CONFIG, $=id=>document.getElementById(id);
 const types={CHECKIN:'運動打卡',INBODY:'身體檢測',PT:'教練課程',COURSE_EXEC:'執行課程'};
 let mode='',db=null,auth=null,user=null,role='',userProfile=null,registering=false,logCursor=null,loadedLogs=[],logHasMore=false,busy=false,verified=null;
 const store={members:{},claims:{},logs:{},pools:{},sessions:{},ptSessionsV2:{},ptContractBalances:{},ptContractBindings:{}};
+let memberEditLookup=null;
 function escapeHTML(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(message,kind='ok',where='verifyResult'){const x=$(where);x.className='notice '+(kind==='error'?'error':kind==='ok'?'ok':'');x.textContent=message;x.classList.remove('hidden');}
 function fail(e,where='verifyResult'){console.error(e);toast('操作沒有完成：'+(e?.message||String(e))+'。資料未標記為成功。','error',where);}
@@ -329,7 +363,7 @@ function branchChanged(){
 function resetVerification(){if(verified)return;const result=$('verifyResult');if(result)result.classList.add('hidden');}
 function selectQuickTask(t){if(!['CHECKIN','INBODY'].includes(t)||busy)return;$('task').value=t;for(const btn of document.querySelectorAll('[data-task-choice]')){const on=btn.dataset.taskChoice===t;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));}resetVerification();}
 function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelectorAll('[data-export-only]').forEach(x=>x.classList.toggle('hidden',!isManager()));document.querySelector('[data-backend-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-backend-tab="import"]').classList.toggle('hidden',!isManager());document.querySelector('[data-backend-tab="staff-admin"]').classList.toggle('hidden',mode!=='cloud'||!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role+(isStaff()?' / '+userProfile.branch+'館':'');selectQuickTask('CHECKIN');tab('verify');refreshStats();}
-function tab(name){if(['import','logs','staff-admin'].includes(name)&&!isManager())return;if(name==='staff-admin'&&mode!=='cloud')return;if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}const inBackend=['unclaimed','import','logs','staff-admin'].includes(name);for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');$('backendNav').classList.toggle('hidden',!inBackend);for(const p of document.querySelectorAll('.primary-nav .tab'))p.classList.toggle('active',p.dataset.tab===name||(p.dataset.tab==='backend'&&inBackend));for(const p of document.querySelectorAll('.backend-tab'))p.classList.toggle('active',inBackend&&p.dataset.backendTab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();if(name==='staff-admin')loadStaffAdmin();}
+function tab(name){if(['import','logs','staff-admin'].includes(name)&&!isManager())return;if(name==='staff-admin'&&mode!=='cloud')return;if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}const inBackend=['member-edit','unclaimed','import','logs','staff-admin'].includes(name);for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');$('backendNav').classList.toggle('hidden',!inBackend);for(const p of document.querySelectorAll('.primary-nav .tab'))p.classList.toggle('active',p.dataset.tab===name||(p.dataset.tab==='backend'&&inBackend));for(const p of document.querySelectorAll('.backend-tab'))p.classList.toggle('active',inBackend&&p.dataset.backendTab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();if(name==='staff-admin')loadStaffAdmin();}
 function startDemo(){mode='demo';role='admin';try{Object.assign(store,JSON.parse(localStorage.getItem(CFG.demoStorageKey)||'{}'));}catch(e){};for(const k of ['ptSessionsV2','ptContractBalances','ptContractBindings'])store[k]=store[k]||{};if(!Object.keys(store.members||{}).length){store.members={'0911111111':{name:'示範會員甲',phone:'0911111111'},'0922222222':{name:'示範會員乙',phone:'0922222222'}};saveDemo();}setStatus('本機示範｜不跨裝置');$('banner').textContent='本機示範模式：僅使用虛構資料。沒有跨電腦同步，請勿輸入真實會員資料或用於正式核銷。';initApp();}
 function saveDemo(){localStorage.setItem(CFG.demoStorageKey,JSON.stringify(store));refreshStats();}
 function configured(){return CFG.firebase.apiKey!=='REPLACE_ME'&&CFG.firebase.projectId!=='REPLACE_ME';}
@@ -543,19 +577,100 @@ async function releasePendingAdmin(key){
 async function saveMember(){
   try{
     fresh();const name=tidyName($('memberName').value),p=normalizedPhone($('memberPhone').value);
-    if(!name||!p)throw new Error('請輸入姓名與有效手機');
-    if(!confirm(`新增會員／更正姓名：${name} (${p})？\n原本的手機識別碼不會改動，核銷歷史也不會清除。`))return;
+    if(!name||!p)throw new Error('請輸入姓名與有效的 10 碼手機');
+    if(!confirm(`確認新增會員？\n姓名：${name}\n手機：${p}\n\n若此手機已存在，系統會拒絕覆蓋原會員資料。`))return;
     lock(true);
     if(mode==='cloud'){
-      const data={name,phone:p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-      if(user)data.updatedBy=user.uid;
-      await db.collection('members').doc(p).set(data,{merge:true});
-    }else{store.members[p]={...(store.members[p]||{}),name,phone:p};saveDemo();}
-    toast('會員儲存完成（不會清除核銷歷史）','ok','banner');
+      const ref=db.collection('members').doc(p);
+      await db.runTransaction(async tx=>{
+        const existing=await tx.get(ref);
+        if(existing.exists){const e=new Error('此手機已建檔。若需要更正姓名，請前往「後台管理 → 會員姓名修改」。');e.code='MEMBER_EXISTS';throw e;}
+        tx.set(ref,{name,phone:p,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.uid});
+      });
+    }else{
+      if(store.members[p]){const e=new Error('此手機已建檔，請到「後台管理 → 會員姓名修改」。');e.code='MEMBER_EXISTS';throw e;}
+      store.members[p]={name,phone:p};saveDemo();
+    }
     $('memberName').value='';$('memberPhone').value='';
     if(isStaff())$('memberFilter').value=p;
     await searchMembers();
-  }catch(e){fail(e,'banner');}finally{lock(false);}
+    showFeedbackModal('新增會員成功',`已建立：${name}（${maskPhone(p)}）。手機為會員唯一識別鍵。`,'ok');
+  }catch(e){
+    if(e?.code==='MEMBER_EXISTS')showFeedbackModal('此手機已存在',e.message,'warning');
+    else showFeedbackModal('新增會員失敗',e?.message||String(e),'error');
+  }finally{lock(false);}
+}
+function invalidateMemberEdit(){
+  memberEditLookup=null;
+  $('memberEditFound').classList.add('hidden');
+  $('memberEditForm').classList.add('hidden');
+  $('memberEditNewName').value='';
+  $('memberEditStatus').textContent='請按「查詢現有姓名」確認會員身分。';
+}
+async function lookupMemberForEdit(){
+  if(busy)return;
+  const phone=normalizedPhone($('memberEditPhone').value);
+  invalidateMemberEdit();
+  if(!phone){$('memberEditStatus').textContent='請輸入有效的 10 碼手機號碼。';return;}
+  try{
+    fresh();lock(true);
+    const member=mode==='cloud'
+      ?(await db.collection('members').doc(phone).get({source:'server'}))
+      :null;
+    const data=mode==='cloud'?(member.exists?member.data():null):store.members[phone];
+    if(!data){$('memberEditStatus').textContent='查無此手機的會員資料。請先確認手機，若為新會員請至前台新增。';return;}
+    memberEditLookup={phone,name:String(data.name||'')};
+    $('memberEditCurrentName').textContent=memberEditLookup.name;
+    $('memberEditMaskedPhone').textContent='手機：'+maskPhone(phone);
+    $('memberEditFound').classList.remove('hidden');
+    $('memberEditStatus').textContent='已找到會員。確認姓名後，才可點選右側「修改姓名」。';
+  }catch(e){$('memberEditStatus').textContent='查詢失敗：'+(e?.message||String(e));}
+  finally{lock(false);}
+}
+function startMemberNameEdit(){
+  if(!memberEditLookup)return;
+  $('memberEditNewName').value=memberEditLookup.name;
+  $('memberEditForm').classList.remove('hidden');
+  $('memberEditNewName').focus();
+}
+function cancelMemberNameEdit(){
+  $('memberEditNewName').value='';
+  $('memberEditForm').classList.add('hidden');
+}
+async function confirmMemberNameEdit(){
+  if(busy||!memberEditLookup)return;
+  const {phone, name:oldName}=memberEditLookup;
+  const newName=tidyName($('memberEditNewName').value);
+  if(!newName){$('memberEditStatus').textContent='請輸入正確的新姓名。';return;}
+  if(newName===oldName){$('memberEditStatus').textContent='新姓名與原姓名相同，無需修改。';return;}
+  if(normalizedPhone($('memberEditPhone').value)!==phone){invalidateMemberEdit();return;}
+  if(!confirm(`請再次確認會員姓名更正：\n手機：${phone}\n原姓名：${oldName}\n新姓名：${newName}\n\n確定儲存？`))return;
+  try{
+    fresh();lock(true);
+    if(mode==='cloud'){
+      const ref=db.collection('members').doc(phone);
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);
+        if(!snap.exists)throw new Error('會員已不存在，請重新查詢。');
+        if(String(snap.data().name||'')!==oldName)throw new Error('會員姓名已由其他操作員更新，請重新查詢確認最新資料。');
+        tx.update(ref,{name:newName,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.uid});
+      });
+    }else{
+      if(!store.members[phone])throw new Error('會員已不存在，請重新查詢。');
+      if(store.members[phone].name!==oldName)throw new Error('資料已變更，請重新查詢。');
+      store.members[phone].name=newName;saveDemo();
+    }
+    memberEditLookup={phone,name:newName};
+    $('memberEditCurrentName').textContent=newName;
+    cancelMemberNameEdit();
+    $('memberEditStatus').textContent='姓名修改成功，手機與核銷紀錄未變動。';
+    showFeedbackModal('會員姓名修改成功',`${oldName} → ${newName}\n手機：${maskPhone(phone)}\n既有核銷紀錄維持不變。`,'ok');
+  }catch(e){
+    $('memberEditStatus').textContent='修改未完成：'+(e?.message||String(e));
+    if(/已由其他操作員更新|已變更|已不存在/.test(String(e?.message||''))){
+      memberEditLookup=null;$('memberEditFound').classList.add('hidden');$('memberEditForm').classList.add('hidden');
+    }
+  }finally{lock(false);}
 }
 async function searchMembers(){
   const filter=$('memberFilter').value.trim();
