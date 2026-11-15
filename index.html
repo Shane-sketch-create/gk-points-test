@@ -116,7 +116,7 @@ fieldset[disabled]{opacity:.55}
 @media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.5</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.6</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
@@ -884,7 +884,8 @@ function updatePTSelectionTotal(){
   $('ptChosenTotal').textContent=`${selected.length} 張合約，共 ${total} 點`;
   const different=new Set(selected.map(x=>tidyName(x.student))).size>1;
   $('ptSelectedWarning').textContent=different?'選取了不同姓名的合約，請分別核銷；目前禁止合併。':selected.length>1?'多張合約請確認是同一個學員，才能合併發點。':'請依合約編號核對實際上課者。';
-  $('ptProceedBtn').disabled=!selected.length||different;
+  if(selected.length>6){$('ptSelectedWarning').textContent='單次最多可核銷 6 張合約。請先選最多 6 張；其餘合約分批核銷。';}
+  $('ptProceedBtn').disabled=!selected.length||different||selected.length>6;
 }
 function renderPTSelection(){
   const names=new Set(ptRows.map(x=>tidyName(x.student)));
@@ -895,6 +896,7 @@ function startPTClaim(){
   if(busy||!ptSelected.size||ptLookupBranch!==$('branch').value)return;
   const chosen=ptRows.filter(x=>ptSelected.has(x.id));
   if(new Set(chosen.map(x=>tidyName(x.student))).size!==1){showFeedbackModal('不能合併不同姓名','請分開查詢及核銷。','warning');return;}
+  if(chosen.length>6){showFeedbackModal('一次最多 6 張合約','Firebase 核銷安全規則要求每張合約逐筆核對，請先分批選取。','warning');return;}
   const total=chosen.reduce((sum,x)=>sum+Number(x.pending),0);
   if(!Number.isInteger(total)||total<=0){showFeedbackModal('點數不正確','請重新查詢。','error');return;}
   ptSelection={student:chosen[0].student,branch:ptLookupBranch,contracts:chosen.map(x=>({id:x.id,student:x.student,contract:x.contract,pending:Number(x.pending)})),total};
@@ -909,7 +911,7 @@ async function redeemSelectedPT(){
   try{requireActiveBranch();}catch(e){showFeedbackModal('館別權限不符',e.message,'error');return;}
   const chosen=ptSelection;
   if(chosen.branch!==$('branch').value){cancelPTClaim();showFeedbackModal('館別已更換','請重新查詢。','error');return;}
-  if(chosen.contracts.length>400){showFeedbackModal('合約數量過多','請分批核銷，這不是點數上限。','error');return;}
+  if(chosen.contracts.length>6){showFeedbackModal('單次最多 6 張合約','請分批核銷。此上限是為了讓 Firestore 能逐張驗證實際扣除點數。','error');return;}
   if(!confirm(`請確認已核對下列合約均屬於同一位學員，且 LINE 確實已發點：\n\n${chosen.student}｜${chosen.branch}館\n${chosen.contracts.map(x=>x.contract+'：'+x.pending+' 點').join('\n')}\n\n合計 ${chosen.total} 點。確認登記嗎？`))return;
   lock(true);
   try{
@@ -926,15 +928,15 @@ async function redeemSelectedPT(){
           sum+=old.pending;
         }
         if(sum!==chosen.total||sum<1)throw new Error('點數不一致，請重新查詢');
-        for(let i=0;i<refs.length;i++)tx.update(refs[i],{pending:0,redeemed:firebase.firestore.FieldValue.increment(chosen.contracts[i].pending),lastRedeemLogId:logId,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        tx.set(logRef,logData('PT',chosen.student,'',sum,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),ref:chosen.contracts.map(x=>x.contract).join('、')}));
+        for(let i=0;i<refs.length;i++)tx.update(refs[i],{pending:0,redeemed:firebase.firestore.FieldValue.increment(chosen.contracts[i].pending),lastRedeemLogId:logId,lastRedeemPoints:chosen.contracts[i].pending,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        tx.set(logRef,logData('PT',chosen.student,'',sum,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),contractPoints:chosen.contracts.map(x=>x.pending),ref:chosen.contracts.map(x=>x.contract).join('、')}));
         points=sum;
       });
     }else{
       for(const c of chosen.contracts){const current=store.ptContractBalances[c.id];if(!current||current.student!==c.student||current.branch!==chosen.branch||current.contract!==c.contract||Number(current.pending)!==c.pending)throw new Error('資料已變更，請重新查詢');}
       points=chosen.total;
-      for(const c of chosen.contracts){const current=store.ptContractBalances[c.id];current.pending=0;current.redeemed=(Number(current.redeemed)||0)+c.pending;current.lastRedeemLogId=logId;}
-      store.logs[logId]=logData('PT',chosen.student,'',points,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),ref:chosen.contracts.map(x=>x.contract).join('、')});saveDemo();
+      for(const c of chosen.contracts){const current=store.ptContractBalances[c.id];current.pending=0;current.redeemed=(Number(current.redeemed)||0)+c.pending;current.lastRedeemLogId=logId;current.lastRedeemPoints=c.pending;}
+      store.logs[logId]=logData('PT',chosen.student,'',points,{claimId:logId,coach:'',contractIds:chosen.contracts.map(x=>x.id),contractPoints:chosen.contracts.map(x=>x.pending),ref:chosen.contracts.map(x=>x.contract).join('、')});saveDemo();
     }
     cancelPTClaim();ptRows=[];ptSelected.clear();ptLookupBranch='';$('ptQuery').value='';
     $('ptResult').textContent='本次已登記核銷，請輸入下一位學員姓名或合約編號。';
