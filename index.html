@@ -91,7 +91,7 @@ fieldset[disabled]{opacity:.55}
 .coaches-list{line-height:1.65;color:#b9e2ff}
 @media(max-width:600px){.unclaimed-table th,.unclaimed-table td{font-size:13px}}
 
-/* v1.14.2：將會員姓名更正移至後台；前台只新增新會員。 */
+/* v1.14.3：主管邀請自動寄送 Firebase Email Link，員工開信設定密碼；保留會員姓名修正流程。 */
 .member-edit-lookup{max-width:650px}
 .member-edit-profile{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#173046;border:1px solid #3e6684;border-radius:12px;padding:16px;margin:14px 0}
 .member-edit-profile .member-edit-name{font-weight:800;font-size:22px;overflow-wrap:anywhere}
@@ -116,12 +116,12 @@ fieldset[disabled]{opacity:.55}
 @media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.2</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.3</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
-<section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">既有帳號請直接登入。新員工請先由主管在網站發出邀請，再進行首次註冊與信箱驗證。</p>
-<div class="panel sub" id="staffSignupBox"><h3>受邀員工首次啟用</h3><p class="info">主管需先在「員工帳號管理」建立邀請。員工使用受邀的同一信箱註冊，Firebase 會寄送驗證信；完成驗證後再登入。管理員不需要知道員工密碼。</p><div class="grid"><label>受邀電子郵件<input type="email" id="signupEmail" placeholder="employee@example.com" autocomplete="email"></label><label>新密碼（至少 6 字元）<input type="password" id="signupPassword" placeholder="由員工自行設定" autocomplete="new-password"></label></div><button class="btn" id="signupButton" onclick="signupInvitedStaff()">建立受邀員工帳號／寄驗證信</button><p id="signupStatus" class="info" aria-live="polite"></p></div></section>
+<section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">既有帳號請直接登入。新員工由主管建立邀請並寄送 Email；收到信後點擊啟用連結，直接設定自己的密碼。</p>
+<div class="panel sub hidden" id="inviteActivationBox"><h3>啟用 GK 員工帳號</h3><p class="info">你已從邀請信開啟驗證連結。請輸入收到邀請的信箱，然後設定自己的密碼，即可完成信箱驗證與帳號啟用。密碼不會提供給主管。</p><div class="grid"><label>收到邀請的電子郵件<input type="email" id="activationEmail" placeholder="employee@example.com" autocomplete="email"></label><label>設定登入密碼（至少 8 字元）<input type="password" id="activationPassword" placeholder="由員工自行設定" autocomplete="new-password"></label></div><button class="btn primary" id="activateButton" onclick="activateInvitedStaff()">驗證信箱並啟用帳號</button><p id="activationStatus" class="info" aria-live="polite"></p></div></section>
 <div id="app" class="hidden">
 <section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；課程執行紀錄依館別與合約管理，無須先歸戶。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
 <nav class="tabs primary-nav" aria-label="主要操作功能">
@@ -252,8 +252,8 @@ fieldset[disabled]{opacity:.55}
 <section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆；CSV 匯出只包含目前作業館別，並要求主管驗證。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button data-export-only="true" class="btn green" onclick="exportLogs()">主管匯出目前作業館別紀錄（CSV）</button></div><div class="export-scope">核銷紀錄可以在後台查看全部館別，但下載時固定只包含上方「作業館別」目前選取的館別（可套用項目／日期篩選）。</div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
 <section id="view-staff-admin" class="panel hidden">
   <h2>員工帳號管理｜僅管理員</h2>
-  <p class="info">先建立邀請並通知員工到 GK 網站自行註冊；驗證信由 Firebase 在註冊後寄送。此處不會自動寄出主管邀請信，也不會顯示或儲存員工密碼。</p>
-  <div class="panel sub"><h3>新增員工邀請</h3><div class="staff-admin-grid"><label>員工電子郵件<input type="email" id="inviteEmail" placeholder="staff@example.com" autocomplete="off"></label><label>指定館別<select id="inviteBranch"></select></label><button class="btn primary" onclick="inviteStaff()">建立員工邀請</button></div><p id="inviteStatus" class="info" aria-live="polite"></p></div>
+  <p class="info">輸入員工信箱與館別後按「建立邀請並寄送 Email」。員工點擊信中的連結後設定密碼即可啟用；主管無須知道密碼。若寄送失敗，可於下方重新寄送。</p>
+  <div class="panel sub"><h3>新增員工邀請</h3><div class="staff-admin-grid"><label>員工電子郵件<input type="email" id="inviteEmail" placeholder="staff@example.com" autocomplete="off"></label><label>指定館別<select id="inviteBranch"></select></label><button class="btn primary" onclick="inviteStaff()">建立邀請並寄送 Email</button></div><p id="inviteStatus" class="info" aria-live="polite"></p></div>
   <div class="panel sub"><h3>待啟用／已使用邀請</h3><button class="btn" onclick="loadStaffAdmin()">重新整理員工清單</button><div id="inviteList" class="table-scroller info" style="margin-top:12px">尚未載入</div></div>
   <div class="panel sub"><h3>員工帳號</h3><p class="info">可調整員工館別或停用／重新啟用；無法在此修改主管帳號。停用權限後，員工下一次雲端操作應被拒絕。</p><div id="staffUserList" class="table-scroller info">尚未載入</div></div>
 </section>
@@ -373,8 +373,11 @@ function startCloud(){
     if(firebase.apps.length)firebase.app();else firebase.initializeApp(CFG.firebase);
     auth=firebase.auth();db=firebase.firestore();db.settings({ignoreUndefinedProperties:true});mode='cloud';
     $('modePanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');
+    const hasInviteLink=auth.isSignInWithEmailLink(window.location.href);
+    $('inviteActivationBox').classList.toggle('hidden',!hasInviteLink);
     auth.onAuthStateChanged(async u=>{
-      if(registering)return;
+      // Email 邀請認領流程由員工填寫收件信箱與密碼後啟動，不自動把舊登入狀態當成受邀員工。
+      if(registering||hasInviteLink)return;
       if(!u){if($('app').classList.contains('hidden')){$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');}return;}
       try{await authorize(u);initApp();}
       catch(e){await auth.signOut();$('app').classList.add('hidden');$('loginPanel').classList.remove('hidden');fail(e,'banner');setStatus('登入未授權');}
@@ -406,18 +409,34 @@ async function claimStaffInvite(u){
   });
 }
 async function login(){try{await auth.signInWithEmailAndPassword(normalizeEmail($('email').value),$('password').value);$('password').value='';}catch(e){fail(e,'banner');}}
-async function signupInvitedStaff(){
+function inviteEmailActionSettings(){
+  // 使用現有 GitHub Pages 授權網域；Email Link 由 Firebase Auth 寄送。
+  return {url:window.location.origin+window.location.pathname,handleCodeInApp:true};
+}
+async function activateInvitedStaff(){
   if(registering)return;
-  const email=normalizeEmail($('signupEmail').value),password=$('signupPassword').value;
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||password.length<6){$('signupStatus').textContent='請輸入有效電子郵件與至少 6 字元密碼。';return;}
-  registering=true;$('signupButton').disabled=true;
+  const email=normalizeEmail($('activationEmail').value),password=$('activationPassword').value;
+  const status=$('activationStatus');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||password.length<8){status.textContent='請輸入收到邀請的電子郵件，以及至少 8 字元的密碼。';return;}
+  if(!auth||!auth.isSignInWithEmailLink(window.location.href)){status.textContent='這不是有效的 Email 邀請連結，請從邀請信重新開啟。';return;}
+  registering=true;$('activateButton').disabled=true;
   try{
-    const credential=await auth.createUserWithEmailAndPassword(email,password);
-    await credential.user.sendEmailVerification();
-    $('signupStatus').textContent='已建立帳號並寄出 Firebase 驗證信。請到信箱完成驗證，回來使用上方登入。主管須先建立對應邀請。';
-    $('signupPassword').value='';await auth.signOut();
-  }catch(e){$('signupStatus').textContent='註冊未完成：'+(e.code==='auth/email-already-in-use'?'此信箱已建立 Firebase 帳號，請直接登入；如果尚未驗證信箱，請聯絡管理員協助。':e.message);}
-  finally{registering=false;$('signupButton').disabled=false;}
+    status.textContent='正在驗證邀請信…';
+    const result=await auth.signInWithEmailLink(email,window.location.href);
+    // 使用者經 Email Link 確認信箱所有權後再設定密碼，避免重複寄驗證信。
+    await result.user.updatePassword(password);
+    await result.user.getIdToken(true);
+    await claimStaffInvite(result.user);
+    await authorize(result.user);
+    $('activationPassword').value='';
+    // 清除一次性連結，避免重新整理頁面重用憑證。
+    window.history.replaceState({},document.title,window.location.origin+window.location.pathname);
+    $('inviteActivationBox').classList.add('hidden');
+    initApp();
+  }catch(e){
+    status.textContent='啟用失敗：'+(e?.message||String(e))+'。如已完成信箱驗證，請嘗試用剛設定的密碼登入，或聯絡主管確認邀請狀態。';
+    if(auth.currentUser)await auth.signOut().catch(()=>{});
+  }finally{registering=false;$('activateButton').disabled=false;}
 }
 async function logout(){if(mode==='cloud'){await auth.signOut();location.reload();}else location.reload();}
 function fresh(){if(mode!=='cloud')return; if(!navigator.onLine)throw new Error('網路離線；禁止核銷以避免跨館重複'); if(!user)throw new Error('尚未登入');}
@@ -1003,15 +1022,33 @@ async function inviteStaff(){
     requireManager();fresh();
     const email=normalizeEmail($('inviteEmail').value),branch=$('inviteBranch').value;
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||!CFG.branches.includes(branch))throw new Error('請輸入有效電子郵件與館別');
-    if(!confirm(`建立 ${email} 的 ${branch}館員工邀請？\n請再通知員工到 GK 網站註冊並驗證信箱。`))return;
+    if(!confirm(`建立 ${email} 的 ${branch}館員工邀請，並自動寄送啟用 Email？`))return;
     const id=await hash('GK-STAFF-INVITE|'+email);
     const ref=db.collection('staffInvites').doc(id);
     const doc=await ref.get({source:'server'});
-    if(doc.exists)throw new Error('這個信箱已經有邀請紀錄，請在下方查看狀態，避免重複授權');
+    if(doc.exists)throw new Error('這個信箱已有邀請紀錄。請在清單中查看狀態或重新寄送，不要重複建檔。');
     await ref.set({email,branch,status:'pending',createdBy:user.uid,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    $('inviteEmail').value='';$('inviteStatus').textContent='邀請已建立。請把 GK 網站網址提供給員工，請其使用這個信箱註冊與驗證。';
+    $('inviteEmail').value='';
+    // 邀請寫入成功後才寄信；如果寄送失敗，保留待處理邀請以供重寄。
+    try{
+      await auth.sendSignInLinkToEmail(email,inviteEmailActionSettings());
+      $('inviteStatus').textContent='邀請已建立，Firebase 已接受寄送啟用 Email 的要求。請員工查看收件匣與垃圾郵件。';
+    }catch(mailError){
+      $('inviteStatus').textContent='邀請已建立，但寄信失敗：'+mailError.message+'。請先確認 Firebase 已啟用「電子郵件連結（無密碼登入）」，再使用清單的「重寄 Email」。';
+    }
     await loadStaffAdmin();
   }catch(e){$('inviteStatus').textContent='建立失敗：'+(e.message||e);}
+}
+async function resendStaffInvite(inviteId,email){
+  try{
+    requireManager();fresh();
+    const ref=db.collection('staffInvites').doc(inviteId);
+    const snap=await ref.get({source:'server'});
+    if(!snap.exists||snap.data().status!=='pending'||snap.data().email!==email)throw new Error('邀請不是待啟用狀態，已不能重寄');
+    if(!confirm(`重新寄送啟用 Email 到 ${email}？`))return;
+    await auth.sendSignInLinkToEmail(email,inviteEmailActionSettings());
+    $('inviteStatus').textContent='Firebase 已接受重寄邀請信的要求。';
+  }catch(e){$('inviteStatus').textContent='重寄失敗：'+(e.message||e);}
 }
 async function revokeInvite(id){
   try{
@@ -1039,7 +1076,7 @@ async function loadStaffAdmin(){
     fresh();
     const [a,b]=await Promise.all([db.collection('staffInvites').limit(300).get({source:'server'}),db.collection('users').limit(300).get({source:'server'})]);
     const invites=a.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>String(x.email).localeCompare(String(y.email)));
-    $('inviteList').innerHTML=invites.length?`<table><thead><tr><th>信箱</th><th>館別</th><th>狀態</th><th>操作</th></tr></thead><tbody>${invites.map(i=>`<tr><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.branch)}</td><td>${escapeHTML(i.status==='claimed'?'已啟用':i.status==='revoked'?'已撤銷':'待註冊驗證')}</td><td>${i.status==='pending'?`<button class="btn" data-invite-id="${escapeHTML(i.id)}" onclick="revokeInvite(this.dataset.inviteId)">撤銷邀請</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'尚無邀請';
+    $('inviteList').innerHTML=invites.length?`<table><thead><tr><th>信箱</th><th>館別</th><th>狀態</th><th>操作</th></tr></thead><tbody>${invites.map(i=>`<tr><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.branch)}</td><td>${escapeHTML(i.status==='claimed'?'已啟用':i.status==='revoked'?'已撤銷':'待註冊驗證')}</td><td>${i.status==='pending'?`<button class="btn" data-invite-id="${escapeHTML(i.id)}" data-invite-email="${escapeHTML(i.email)}" onclick="resendStaffInvite(this.dataset.inviteId,this.dataset.inviteEmail)">重寄 Email</button> <button class="btn" data-invite-id="${escapeHTML(i.id)}" onclick="revokeInvite(this.dataset.inviteId)">撤銷邀請</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'尚無邀請';
     const people=b.docs.filter(d=>d.data().role==='staff').map(d=>({uid:d.id,...d.data()})).sort((x,y)=>String(x.email||x.uid).localeCompare(String(y.email||y.uid)));
     $('staffUserList').innerHTML=people.length?`<table><thead><tr><th>員工</th><th>館別</th><th>啟用狀態</th><th>操作</th></tr></thead><tbody>${people.map(p=>`<tr><td>${escapeHTML(p.email||'未記錄信箱（舊測試帳號）')}<small style="display:block">${escapeHTML(p.uid)}</small></td><td><select id="staffBranch_${escapeHTML(p.uid)}">${CFG.branches.map(v=>`<option value="${escapeHTML(v)}" ${v===p.branch?'selected':''}>${escapeHTML(v)}</option>`).join('')}</select></td><td><label><input id="staffEnabled_${escapeHTML(p.uid)}" type="checkbox" style="width:auto" ${p.enabled?'checked':''}> 啟用</label></td><td><button class="btn primary" data-staff-uid="${escapeHTML(p.uid)}" data-branch="${escapeHTML(p.branch)}" data-enabled="${p.enabled?'1':'0'}" onclick="updateStaffAccess(this.dataset.staffUid,this.dataset.branch,this.dataset.enabled==='1')">儲存變更</button></td></tr>`).join('')}</tbody></table>`:'目前沒有員工帳號';
   }catch(e){$('inviteList').textContent='讀取失敗：'+e.message;$('staffUserList').textContent='請確認 Firestore 權限並重新整理。';}
@@ -1054,5 +1091,9 @@ async function refreshStats(){
   $('stats').innerHTML=`<div class="stat">跨館打卡限制<b>每週 1 次</b><small>全館共同核銷</small></div><div class="stat">身體檢測限制<b>活動 1 次</b><small>全館不得重複領取</small></div><div class="stat">${mode==='demo'?'示範會員數':'會員名冊'}<b>${mc}</b><small>僅用於打卡及檢測</small></div><div class="stat">本館課程待領點數<b>${pt}</b><small>${mode==='cloud'?'請到待領清單取得最新數字':'不需會員歸戶'}</small></div>`;
 }
 
+// 員工從 Email 直接打開網站時，無須再點「進入雲端測試」。
+if(typeof firebase!=='undefined' && firebase.auth().isSignInWithEmailLink(window.location.href)){
+  startCloud();
+}
 </script>
 </body></html>
