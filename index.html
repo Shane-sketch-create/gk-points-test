@@ -116,7 +116,7 @@ fieldset[disabled]{opacity:.55}
 @media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.4</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.5</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
@@ -249,7 +249,7 @@ fieldset[disabled]{opacity:.55}
   </div>
 </section>
 <section id="view-import" class="panel hidden"><h2>資料批次匯入（主管權限）</h2><div class="grid"><div class="panel sub"><h3>一、匯入公司會員名冊</h3><p class="info">需要「姓名／顧客名稱」及「手機／電話」欄位；僅供運動打卡與身體檢測，全館共用，不依作業館別分組；新增／更新不會清除核銷歷史。</p><input id="memberFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importMemberFile()">預覽名冊並確認匯入</button></div><div class="panel sub"><h3>二、匯入教練課簽到報表</h3><p class="info">依上方選定館別匯入公司 11 欄課程執行報表，逐堂去重，依合約訂單編號建立待領點數；<strong>不需會員名冊，也不必歸戶</strong>。</p><input id="ptFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importPTFile()">預覽課程並確認匯入</button></div></div><p class="notice">重要：匯入成功訊息只會在雲端寫入完成後出現。大量匯入可能需要時間；請勿關閉頁面。系統不會替未存檔資料顯示成功。</p><div id="importResult" class="info"></div></section>
-<section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆；CSV 匯出只包含目前作業館別，並要求主管驗證。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button data-export-only="true" class="btn green" onclick="exportLogs()">主管匯出目前作業館別紀錄（CSV）</button></div><div class="export-scope">核銷紀錄可以在後台查看全部館別，但下載時固定只包含上方「作業館別」目前選取的館別（可套用項目／日期篩選）。</div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
+<section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆；主管匯出會依此區塊的「館別／項目／日期」條件擷取符合的完整紀錄，不受列表 100 筆限制。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button data-export-only="true" class="btn green" onclick="exportLogs()">主管匯出目前篩選紀錄（CSV）</button></div><div class="export-scope">匯出範圍依本區「館別」篩選：選「全部館別」即匯出全館；選單一館別即只匯出該館。項目與日期條件同步套用。CSV 含完整手機號碼，限主管驗證下載。</div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
 <section id="view-staff-admin" class="panel hidden">
   <h2>員工帳號管理｜僅管理員</h2>
   <p class="info">輸入員工信箱與館別後按「建立邀請並寄送 Email」。員工點擊信中的連結後設定密碼即可啟用；主管無須知道密碼。若寄送失敗，可於下方重新寄送。</p>
@@ -1027,29 +1027,51 @@ function filterLog(l){return (!$('logBranch').value||l.branch===$('logBranch').v
 function logTable(items){return `<table><thead><tr><th>核銷日期</th><th>館別</th><th>姓名</th><th>手機</th><th>項目</th><th>點數</th><th>教練／單號</th><th>操作帳號</th></tr></thead><tbody>${items.map(x=>`<tr><td>${escapeHTML(timestamp(x.createdAt))}</td><td>${escapeHTML(x.branch)}</td><td>${escapeHTML(x.name)}</td><td>${escapeHTML(maskPhone(x.phone))}</td><td>${escapeHTML(types[x.type]||x.type)}</td><td>${Number(x.points)||0}</td><td>${escapeHTML(x.coach||x.ref||'')}</td><td>${escapeHTML(x.operator)}</td></tr>`).join('')}</tbody></table>`;}
 async function loadLogs(reset=true){try{fresh();if(reset){logCursor=null;loadedLogs=[];}let arr=[];if(mode==='cloud'){let query=db.collection('logs').orderBy('createdAt','desc').limit(100);if(logCursor)query=query.startAfter(logCursor);const snap=await query.get({source:'server'});arr=snap.docs.map(x=>({id:x.id,...x.data()}));logCursor=snap.docs[snap.docs.length-1]||null;logHasMore=snap.size===100;}else{const all=Object.entries(store.logs).map(([id,x])=>({id,...x})).sort((a,b)=>timestamp(b.createdAt).localeCompare(timestamp(a.createdAt)));arr=all.slice(loadedLogs.length,loadedLogs.length+100);logHasMore=loadedLogs.length+arr.length<all.length;}loadedLogs.push(...arr);const match=loadedLogs.filter(filterLog);$('logList').innerHTML=logTable(match);$('logsSummary').textContent=`目前已載入 ${loadedLogs.length} 筆；符合篩選 ${match.length} 筆。若要完整查詢請使用 CSV 全部匯出。`;$('moreLogsBtn').disabled=!logHasMore;}catch(e){$('logsSummary').textContent='核銷資料讀取失敗：'+e.message;}}
 function csvCell(x){const s=String(x??'');return '"'+(/[=+\-@]/.test(s.charAt(0))?"'"+s:s).replace(/"/g,'""')+'"';}
-function downloadCSV(rows,branch){const columns=['createdAt','branch','name','phone','type','points','week','coach','ref','operator','id'];const names=['核銷時間','館別','會員姓名','會員手機','任務項目','點數','週次','教練','交易編號','操作帳號','流水ID'];const out=[names.map(csvCell).join(',')];for(const x of rows){const o={...x,type:types[x.type]||x.type,createdAt:timestamp(x.createdAt)};out.push(columns.map(k=>csvCell(o[k])).join(','));}const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GK_${branch}館_核銷紀錄_${taipeiDate()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+function downloadCSV(rows,scopeLabel){const columns=['createdAt','branch','name','phone','type','points','week','coach','ref','operator','id'];const names=['核銷時間','館別','會員姓名','會員手機','任務項目','點數','週次','教練','交易編號','操作帳號','流水ID'];const out=[names.map(csvCell).join(',')];for(const x of rows){const o={...x,type:types[x.type]||x.type,createdAt:timestamp(x.createdAt)};out.push(columns.map(k=>csvCell(o[k])).join(','));}const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GK_${scopeLabel}_核銷紀錄_${taipeiDate()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 async function exportLogs(){
   let locked=false;
   try{
-    const branch=$('branch').value;
-    if(!await requestExportPIN(`${branch}館核銷紀錄（依目前項目及日期篩選）`))return;
+    // 選定範圍必須取自「全館核銷後台」的篩選欄位，而非頁首作業館別。
+    const filters={
+      branch:$('logBranch').value,
+      type:$('logType').value,
+      from:$('logFrom').value,
+      to:$('logTo').value
+    };
+    if(filters.from && filters.to && filters.from>filters.to)throw new Error('開始日期不能晚於結束日期');
+    const scope=filters.branch?filters.branch+'館':'全館';
+    if(!await requestExportPIN(`${scope}核銷紀錄（依目前館別／項目／日期篩選）`))return;
     requireManager();fresh();lock(true);locked=true;
     let arr=[];
     if(mode==='demo')arr=Object.entries(store.logs).map(([id,x])=>({id,...x}));
     else{
       let last=null;
-      while(true){let q=db.collection('logs').where('branch','==',branch).limit(400);
+      while(true){
+        let q=db.collection('logs');
+        // 「全部館別」不加入 branch 條件；單一館別才由雲端先過濾。
+        if(filters.branch)q=q.where('branch','==',filters.branch);
+        q=q.limit(400);
         if(last)q=q.startAfter(last);
         const s=await q.get({source:'server'});
         arr.push(...s.docs.map(x=>({id:x.id,...x.data()})));
-        $('logsSummary').textContent=`正在匯出 ${branch}館：已取得 ${arr.length} 筆`;
-        if(s.size<400)break;last=s.docs[s.docs.length-1];
+        $('logsSummary').textContent=`正在匯出 ${scope}：已取得 ${arr.length} 筆`;
+        if(s.size<400)break;
+        last=s.docs[s.docs.length-1];
       }
     }
-    if($('branch').value!==branch)throw new Error('作業館別已切換，請重新匯出');
-    const match=arr.filter(l=>l.branch===branch&&(!$('logType').value||l.type===$('logType').value)&&(!$('logFrom').value||l.date>=$('logFrom').value)&&(!$('logTo').value||l.date<=$('logTo').value));
-    downloadCSV(match,branch);
-    $('logsSummary').textContent=`已匯出 ${branch}館 ${match.length} 筆核銷紀錄（依項目／日期篩選，手機為完整號碼）。`;
+    // 查詢期間若篩選被調整，停止匯出，避免下載內容與顯示條件不一致。
+    if($('logBranch').value!==filters.branch || $('logType').value!==filters.type ||
+       $('logFrom').value!==filters.from || $('logTo').value!==filters.to)
+      throw new Error('核銷篩選條件已變更，請重新執行匯出');
+    const match=arr.filter(l=>(!filters.branch||l.branch===filters.branch)
+      &&(!filters.type||l.type===filters.type)
+      &&(!filters.from||l.date>=filters.from)
+      &&(!filters.to||l.date<=filters.to));
+    // CSV 以核銷時間新到舊排列，而不依 Firestore 文件 ID 排序。
+    const ms=x=>x?.toMillis?.()??Date.parse(x||'')??0;
+    match.sort((a,b)=>(ms(b.createdAt)||0)-(ms(a.createdAt)||0));
+    downloadCSV(match,scope);
+    $('logsSummary').textContent=`已匯出 ${scope} ${match.length} 筆核銷紀錄（依館別／項目／日期篩選，手機為完整號碼）。`;
   }catch(e){$('logsSummary').textContent='匯出失敗：'+e.message;}
   finally{if(locked)lock(false);}
 }
