@@ -116,12 +116,12 @@ fieldset[disabled]{opacity:.55}
 @media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.3</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.4</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
-<section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">既有帳號請直接登入。新員工由主管建立邀請並寄送 Email；收到信後點擊啟用連結，直接設定自己的密碼。</p>
-<div class="panel sub hidden" id="inviteActivationBox"><h3>啟用 GK 員工帳號</h3><p class="info">你已從邀請信開啟驗證連結。請輸入收到邀請的信箱，然後設定自己的密碼，即可完成信箱驗證與帳號啟用。密碼不會提供給主管。</p><div class="grid"><label>收到邀請的電子郵件<input type="email" id="activationEmail" placeholder="employee@example.com" autocomplete="email"></label><label>設定登入密碼（至少 8 字元）<input type="password" id="activationPassword" placeholder="由員工自行設定" autocomplete="new-password"></label></div><button class="btn primary" id="activateButton" onclick="activateInvitedStaff()">驗證信箱並啟用帳號</button><p id="activationStatus" class="info" aria-live="polite"></p></div></section>
+<section id="loginPanel" class="panel hidden"><div id="normalLoginFields"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">既有帳號請直接登入。新員工由主管建立邀請並寄送 Email；收到信後點擊啟用連結，直接設定自己的密碼。</p></div>
+<div class="panel sub hidden" id="inviteActivationBox"><h2>啟用 GK 員工帳號</h2><p class="info">這是員工專用啟用表單，不需要輸入主管帳號。請填寫「收到這封信的員工 Email」，再設定密碼。</p><div class="grid"><label>受邀員工 Email<input type="email" id="activationEmail" placeholder="請填收到邀請的員工信箱" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>新員工登入密碼（至少 8 字元）<input type="password" id="activationPassword" placeholder="員工自行設定，請勿使用主管密碼" autocomplete="new-password"></label></div><button class="btn primary" id="activateButton" onclick="activateInvitedStaff()">驗證信箱並啟用帳號</button><p id="activationStatus" class="info" aria-live="polite"></p><button class="btn" type="button" onclick="backToRegularGKLogin()">已經設定過密碼？改用一般登入</button></div></section>
 <div id="app" class="hidden">
 <section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；課程執行紀錄依館別與合約管理，無須先歸戶。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
 <nav class="tabs primary-nav" aria-label="主要操作功能">
@@ -263,7 +263,7 @@ fieldset[disabled]{opacity:.55}
 'use strict';
 const CFG=window.GK_CONFIG, $=id=>document.getElementById(id);
 const types={CHECKIN:'運動打卡',INBODY:'身體檢測',PT:'教練課程',COURSE_EXEC:'執行課程'};
-let mode='',db=null,auth=null,user=null,role='',userProfile=null,registering=false,logCursor=null,loadedLogs=[],logHasMore=false,busy=false,verified=null;
+let mode='',db=null,auth=null,user=null,role='',userProfile=null,registering=false,activationSignedInUid=null,logCursor=null,loadedLogs=[],logHasMore=false,busy=false,verified=null;
 const store={members:{},claims:{},logs:{},pools:{},sessions:{},ptSessionsV2:{},ptContractBalances:{},ptContractBindings:{}};
 let memberEditLookup=null;
 function escapeHTML(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -375,6 +375,9 @@ function startCloud(){
     $('modePanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');
     const hasInviteLink=auth.isSignInWithEmailLink(window.location.href);
     $('inviteActivationBox').classList.toggle('hidden',!hasInviteLink);
+    $('normalLoginFields').classList.toggle('hidden',hasInviteLink);
+    // Email 啟用時不可讓瀏覽器預填的主管登入框干擾員工信箱。
+    if(hasInviteLink){$('email').value='';$('password').value='';$('activationEmail').value='';}
     auth.onAuthStateChanged(async u=>{
       // Email 邀請認領流程由員工填寫收件信箱與密碼後啟動，不自動把舊登入狀態當成受邀員工。
       if(registering||hasInviteLink)return;
@@ -413,29 +416,65 @@ function inviteEmailActionSettings(){
   // 使用現有 GitHub Pages 授權網域；Email Link 由 Firebase Auth 寄送。
   return {url:window.location.origin+window.location.pathname,handleCodeInApp:true};
 }
+function backToRegularGKLogin(){
+  // 遺失或已使用的一次性 Email 連結，不能重用；回到乾淨登入頁面。
+  window.location.assign(window.location.origin+window.location.pathname);
+}
 async function activateInvitedStaff(){
   if(registering)return;
   const email=normalizeEmail($('activationEmail').value),password=$('activationPassword').value;
   const status=$('activationStatus');
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||password.length<8){status.textContent='請輸入收到邀請的電子郵件，以及至少 8 字元的密碼。';return;}
-  if(!auth||!auth.isSignInWithEmailLink(window.location.href)){status.textContent='這不是有效的 Email 邀請連結，請從邀請信重新開啟。';return;}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||password.length<8){status.textContent='請輸入收到邀請的【員工】電子郵件，以及至少 8 字元的員工密碼。';return;}
+  const emailLink=window.location.href;
+  const hasLink=!!auth&&auth.isSignInWithEmailLink(emailLink);
+  const canResume=!!auth&&!!activationSignedInUid&&auth.currentUser?.uid===activationSignedInUid&&normalizeEmail(auth.currentUser.email)===email;
+  if(!hasLink&&!canResume){status.textContent='目前沒有有效的邀請連結。請主管重寄新的 Email，或按「改用一般登入」。';return;}
   registering=true;$('activateButton').disabled=true;
+  let stage='連結驗證';
   try{
-    status.textContent='正在驗證邀請信…';
-    const result=await auth.signInWithEmailLink(email,window.location.href);
-    // 使用者經 Email Link 確認信箱所有權後再設定密碼，避免重複寄驗證信。
-    await result.user.updatePassword(password);
-    await result.user.getIdToken(true);
-    await claimStaffInvite(result.user);
-    await authorize(result.user);
+    let invitedUser;
+    if(canResume){
+      invitedUser=auth.currentUser;
+    }else{
+      // 避免同一個瀏覽器殘留的主管登入狀態或自動填入干擾新員工啟用。
+      if(auth.currentUser && normalizeEmail(auth.currentUser.email)!==email){
+        status.textContent='偵測到另一個帳號登入中；正在切換至受邀員工…';
+        await auth.signOut();
+      }
+      status.textContent='正在驗證【'+email+'】的邀請連結…';
+      try{
+        const result=await auth.signInWithEmailLink(email,emailLink);
+        invitedUser=result.user;
+      }catch(e){
+        if(e.code==='auth/invalid-action-code'||e.code==='auth/expired-action-code'){
+          throw new Error('Email 連結已使用、過期，或填入的員工信箱與收件者不同。請先確認受邀信箱；如連結已失效，請主管重寄全新的 Email，不要重複點選舊信件。');
+        }
+        throw e;
+      }
+      // 此時 Firebase 一次性代碼已經成功兌換，先移除網址中的代碼。
+      activationSignedInUid=invitedUser.uid;
+      window.history.replaceState({},document.title,window.location.origin+window.location.pathname);
+    }
+    if(normalizeEmail(invitedUser.email)!==email||!invitedUser.emailVerified)throw new Error('登入信箱尚未完成驗證或與收件信箱不符');
+    stage='設定登入密碼';
+    status.textContent='信箱驗證成功，正在設定員工密碼…';
+    await invitedUser.updatePassword(password);
+    await invitedUser.getIdToken(true);
+    stage='建立 GK 員工權限';
+    status.textContent='密碼已設定，正在啟用 GK 員工權限…';
+    await claimStaffInvite(invitedUser);
+    await authorize(invitedUser);
     $('activationPassword').value='';
-    // 清除一次性連結，避免重新整理頁面重用憑證。
-    window.history.replaceState({},document.title,window.location.origin+window.location.pathname);
     $('inviteActivationBox').classList.add('hidden');
     initApp();
   }catch(e){
-    status.textContent='啟用失敗：'+(e?.message||String(e))+'。如已完成信箱驗證，請嘗試用剛設定的密碼登入，或聯絡主管確認邀請狀態。';
-    if(auth.currentUser)await auth.signOut().catch(()=>{});
+    const code=e?.code?' ['+e.code+']':'';
+    if(activationSignedInUid&&auth?.currentUser?.uid===activationSignedInUid){
+      status.textContent=stage+'失敗'+code+'：'+(e?.message||String(e))+'。信箱驗證已成功，舊連結不能再使用；請保留此頁面，修正問題後可再按一次啟用，或用剛設定的密碼進入一般登入。';
+    }else{
+      status.textContent='啟用失敗（'+stage+'）'+code+'：'+(e?.message||String(e));
+    }
+    // 不強制登出成功兌換 Email Link 的員工，避免後續失敗時無法恢復。
   }finally{registering=false;$('activateButton').disabled=false;}
 }
 async function logout(){if(mode==='cloud'){await auth.signOut();location.reload();}else location.reload();}
