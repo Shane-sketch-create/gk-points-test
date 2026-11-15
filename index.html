@@ -90,9 +90,23 @@ fieldset[disabled]{opacity:.55}
 .export-controls .btn{min-height:48px;font-size:16px}
 .coaches-list{line-height:1.65;color:#b9e2ff}
 @media(max-width:600px){.unclaimed-table th,.unclaimed-table td{font-size:13px}}
+
+/* v1.14.1：主畫面四個入口；後台功能集中於第二層選單 */
+.primary-nav{gap:9px;margin:16px 0 14px}
+.primary-nav .tab{padding:12px 17px;min-height:48px}
+.backend-panel{background:#101e31;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 16px}
+.backend-heading h2{font-size:18px;margin:0 0 2px}
+.backend-heading p{margin:0 0 13px}
+.backend-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.backend-tab{background:#1a2b40;border:1px solid #3a5270;color:#dce9fa;border-radius:9px;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:650;min-height:44px}
+.backend-tab.active{color:#182235;background:var(--gold);border-color:var(--gold);font-weight:800}
+.backend-tab:hover:not(:disabled){filter:brightness(1.13)}
+.backend-tab:disabled{opacity:.45;cursor:not-allowed}
+.backend-tab:focus-visible,.primary-nav .tab:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
+@media(max-width:560px){.primary-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.primary-nav .tab{padding:11px 6px;font-size:13px}.backend-panel{padding:13px}.backend-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.backend-tab{font-size:13px;padding:10px 6px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14.1</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
@@ -100,7 +114,23 @@ fieldset[disabled]{opacity:.55}
 <div class="panel sub" id="staffSignupBox"><h3>受邀員工首次啟用</h3><p class="info">主管需先在「員工帳號管理」建立邀請。員工使用受邀的同一信箱註冊，Firebase 會寄送驗證信；完成驗證後再登入。管理員不需要知道員工密碼。</p><div class="grid"><label>受邀電子郵件<input type="email" id="signupEmail" placeholder="employee@example.com" autocomplete="email"></label><label>新密碼（至少 6 字元）<input type="password" id="signupPassword" placeholder="由員工自行設定" autocomplete="new-password"></label></div><button class="btn" id="signupButton" onclick="signupInvitedStaff()">建立受邀員工帳號／寄驗證信</button><p id="signupStatus" class="info" aria-live="polite"></p></div></section>
 <div id="app" class="hidden">
 <section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；課程執行紀錄依館別與合約管理，無須先歸戶。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
-<nav class="tabs"><button class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button><button class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button><button class="tab" data-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button><button class="tab" data-tab="members" onclick="tab('members')">會員管理</button><button class="tab" data-tab="import" onclick="tab('import')">Excel 匯入</button><button class="tab" data-tab="logs" onclick="tab('logs')">全館核銷後台</button><button class="tab" data-tab="staff-admin" onclick="tab('staff-admin')">員工帳號管理</button></nav>
+<nav class="tabs primary-nav" aria-label="主要操作功能">
+  <button type="button" class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button>
+  <button type="button" class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button>
+  <button type="button" class="tab" data-tab="members" onclick="tab('members')">會員管理</button>
+  <button type="button" class="tab" data-tab="backend" onclick="tab('unclaimed')">後台管理</button>
+</nav>
+<section id="backendNav" class="backend-panel hidden" aria-label="後台管理選單">
+  <div class="backend-heading">
+    <div><h2>後台管理</h2><p class="info">請選擇要處理的後台項目。</p></div>
+  </div>
+  <nav class="backend-tabs" aria-label="後台管理功能">
+    <button type="button" class="backend-tab" data-backend-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button>
+    <button type="button" class="backend-tab" data-backend-tab="import" onclick="tab('import')">Excel 匯入</button>
+    <button type="button" class="backend-tab" data-backend-tab="logs" onclick="tab('logs')">全館核銷後台</button>
+    <button type="button" class="backend-tab" data-backend-tab="staff-admin" onclick="tab('staff-admin')">員工帳號管理</button>
+  </nav>
+</section>
 <section id="view-verify" class="panel">
 <h2>集點資格查驗</h2>
 <p class="info">這裡只記錄兩種限次集點。<strong>每次固定 1 點</strong>，會員與非會員的這兩項規則相同；所有分館合併計算。</p>
@@ -298,8 +328,8 @@ function branchChanged(){
 }
 function resetVerification(){if(verified)return;const result=$('verifyResult');if(result)result.classList.add('hidden');}
 function selectQuickTask(t){if(!['CHECKIN','INBODY'].includes(t)||busy)return;$('task').value=t;for(const btn of document.querySelectorAll('[data-task-choice]')){const on=btn.dataset.taskChoice===t;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));}resetVerification();}
-function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelectorAll('[data-export-only]').forEach(x=>x.classList.toggle('hidden',!isManager()));document.querySelector('[data-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="import"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="staff-admin"]').classList.toggle('hidden',mode!=='cloud'||!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role+(isStaff()?' / '+userProfile.branch+'館':'');selectQuickTask('CHECKIN');tab('verify');refreshStats();}
-function tab(name){if(['import','logs','staff-admin'].includes(name)&&!isManager())return;if(name==='staff-admin'&&mode!=='cloud')return;if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');for(const p of document.querySelectorAll('.tab'))p.classList.toggle('active',p.dataset.tab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();if(name==='staff-admin')loadStaffAdmin();}
+function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelectorAll('[data-export-only]').forEach(x=>x.classList.toggle('hidden',!isManager()));document.querySelector('[data-backend-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-backend-tab="import"]').classList.toggle('hidden',!isManager());document.querySelector('[data-backend-tab="staff-admin"]').classList.toggle('hidden',mode!=='cloud'||!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role+(isStaff()?' / '+userProfile.branch+'館':'');selectQuickTask('CHECKIN');tab('verify');refreshStats();}
+function tab(name){if(['import','logs','staff-admin'].includes(name)&&!isManager())return;if(name==='staff-admin'&&mode!=='cloud')return;if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}const inBackend=['unclaimed','import','logs','staff-admin'].includes(name);for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');$('backendNav').classList.toggle('hidden',!inBackend);for(const p of document.querySelectorAll('.primary-nav .tab'))p.classList.toggle('active',p.dataset.tab===name||(p.dataset.tab==='backend'&&inBackend));for(const p of document.querySelectorAll('.backend-tab'))p.classList.toggle('active',inBackend&&p.dataset.backendTab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();if(name==='staff-admin')loadStaffAdmin();}
 function startDemo(){mode='demo';role='admin';try{Object.assign(store,JSON.parse(localStorage.getItem(CFG.demoStorageKey)||'{}'));}catch(e){};for(const k of ['ptSessionsV2','ptContractBalances','ptContractBindings'])store[k]=store[k]||{};if(!Object.keys(store.members||{}).length){store.members={'0911111111':{name:'示範會員甲',phone:'0911111111'},'0922222222':{name:'示範會員乙',phone:'0922222222'}};saveDemo();}setStatus('本機示範｜不跨裝置');$('banner').textContent='本機示範模式：僅使用虛構資料。沒有跨電腦同步，請勿輸入真實會員資料或用於正式核銷。';initApp();}
 function saveDemo(){localStorage.setItem(CFG.demoStorageKey,JSON.stringify(store));refreshStats();}
 function configured(){return CFG.firebase.apiKey!=='REPLACE_ME'&&CFG.firebase.projectId!=='REPLACE_ME';}
