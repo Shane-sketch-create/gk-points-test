@@ -74,6 +74,12 @@ select.branch-select:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
 .pt-claim-contracts{font-size:17px;text-align:left;background:#1f3448;border:1px solid #47667e;border-radius:12px;padding:12px 18px;margin:13px 0;max-height:180px;overflow:auto;line-height:1.9}
 #view-pt .contract-table input[type=checkbox]{cursor:pointer;accent-color:#f1b954}
 #view-pt .contract-table tbody tr:hover{background:#20354c}
+/* v1.14 員工權限及邀請管理 */
+.staff-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.staff-admin-grid .btn{align-self:end}
+.table-scroller{overflow-x:auto}
+.table-scroller table{min-width:610px}
+fieldset[disabled]{opacity:.55}
 /* v1.13：匯出驗證及個資遮蔽 */
 .export-hint{font-size:13px;color:#c9dbed;line-height:1.75;margin:9px 0 16px}
 .export-scope{border-left:4px solid #f1b954;background:#233449;padding:11px 14px;margin:12px 0;border-radius:7px;font-weight:650}
@@ -86,14 +92,15 @@ select.branch-select:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
 @media(max-width:600px){.unclaimed-table th,.unclaimed-table td{font-size:13px}}
 </style>
 </head><body>
-<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.13</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
+<header><div class="bar"><div><h1>GK 成吉思汗｜全館集點查驗</h1><small>感謝祭 · 跨館防重複核銷 · 測試版 v1.14</small></div><div class="buttons"><span id="status" class="status">初始化中</span><span id="who" class="muted tiny"></span><button id="logout" class="btn hidden" onclick="logout()">登出</button></div></div></header>
 <main>
 <div id="banner" class="notice">目前為測試版。所有示範資料均為虛構資料；尚未完成雲端設定前，切勿輸入真實會員個資。課程點數按館別、合約及簽到紀錄管理，不要求學員提供手機。</div>
 <section class="panel" id="modePanel"><h2>啟動方式</h2><p class="info">本機示範可立即操作流程，但不會跨電腦同步；全館共用請連接獨立的 Firebase 測試專案。</p><div class="buttons"><button class="btn primary" onclick="startDemo()">進入本機示範（假資料）</button><button class="btn" onclick="startCloud()">進入雲端測試（需先設定）</button></div></section>
-<section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">員工帳號須由 Firebase 管理員事先建立，並在 users/{uid} 設定 enabled=true、role=staff/admin。</p></section>
+<section id="loginPanel" class="panel hidden"><h2>員工登入｜雲端模式</h2><div class="grid"><div><label>員工 Email<input type="email" id="email" autocomplete="username" placeholder="staff@example.com"></label></div><div><label>密碼<input type="password" id="password" autocomplete="current-password" placeholder="Firebase Authentication 密碼"></label></div></div><button class="btn primary" onclick="login()">登入並驗證權限</button><p class="info">既有帳號請直接登入。新員工請先由主管在網站發出邀請，再進行首次註冊與信箱驗證。</p>
+<div class="panel sub" id="staffSignupBox"><h3>受邀員工首次啟用</h3><p class="info">主管需先在「員工帳號管理」建立邀請。員工使用受邀的同一信箱註冊，Firebase 會寄送驗證信；完成驗證後再登入。管理員不需要知道員工密碼。</p><div class="grid"><label>受邀電子郵件<input type="email" id="signupEmail" placeholder="employee@example.com" autocomplete="email"></label><label>新密碼（至少 6 字元）<input type="password" id="signupPassword" placeholder="由員工自行設定" autocomplete="new-password"></label></div><button class="btn" id="signupButton" onclick="signupInvitedStaff()">建立受邀員工帳號／寄驗證信</button><p id="signupStatus" class="info" aria-live="polite"></p></div></section>
 <div id="app" class="hidden">
 <section class="panel"><div class="branch-bar"><label for="branch" class="branch-label">作業館別</label><div class="branch-select-wrap"><select id="branch" class="branch-select" onchange="branchChanged()" aria-label="作業館別"></select></div></div><p class="info branch-help">會員名冊與打卡／檢測限次紀錄全館共用；課程執行紀錄依館別與合約管理，無須先歸戶。</p><div class="grid" id="stats"><div class="stat">運動打卡：每週 1 次（全館共用）</div><div class="stat">身體檢測：每活動 1 次（全館共用）</div></div></section>
-<nav class="tabs"><button class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button><button class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button><button class="tab" data-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button><button class="tab" data-tab="members" onclick="tab('members')">會員管理</button><button class="tab" data-tab="import" onclick="tab('import')">Excel 匯入</button><button class="tab" data-tab="logs" onclick="tab('logs')">全館核銷後台</button></nav>
+<nav class="tabs"><button class="tab active" data-tab="verify" onclick="tab('verify')">集點資格查驗</button><button class="tab" data-tab="pt" onclick="tab('pt')">教練課程點數</button><button class="tab" data-tab="unclaimed" onclick="tab('unclaimed')">本館課程待領清單</button><button class="tab" data-tab="members" onclick="tab('members')">會員管理</button><button class="tab" data-tab="import" onclick="tab('import')">Excel 匯入</button><button class="tab" data-tab="logs" onclick="tab('logs')">全館核銷後台</button><button class="tab" data-tab="staff-admin" onclick="tab('staff-admin')">員工帳號管理</button></nav>
 <section id="view-verify" class="panel">
 <h2>集點資格查驗</h2>
 <p class="info">這裡只記錄兩種限次集點。<strong>每次固定 1 點</strong>，會員與非會員的這兩項規則相同；所有分館合併計算。</p>
@@ -175,18 +182,25 @@ select.branch-select:focus-visible{outline:3px solid #ffdf92;outline-offset:3px}
 <div id="unclaimedList" class="scroll"></div>
 <p class="notice">點「前往查詢」只會帶入該張訂單，若同一學員有多張合約，可改用姓名搜尋後勾選全部正確合約。</p>
 </section>
-<section id="view-members" class="panel hidden"><h2>會員管理</h2><p class="info">快速建檔與 Excel 名冊共用同一份會員資料；手機號碼是跨館識別鍵。禁止直接用刪除／換號清除歷史限制。畫面隱藏手機中間四碼，完整資料僅在主管匯出時提供。</p><div class="grid"><label>姓名<input id="memberName" maxlength="80" placeholder="會員姓名"></label><label>手機<input id="memberPhone" inputmode="numeric" placeholder="09XXXXXXXX"></label></div><div class="buttons"><button class="btn primary" onclick="saveMember()">新增或更新會員姓名</button><button class="btn" onclick="searchMembers()">重新查詢名冊</button></div><label>搜尋會員（姓名或手機）<input id="memberFilter" placeholder="查詢關鍵字"></label><div id="memberList" class="scroll"></div>
+<section id="view-members" class="panel hidden"><h2>會員管理</h2><p class="info">全館共用會員資料，手機是永久識別鍵；員工可新增會員或更正同一手機的姓名，不能刪除會員或改變原有手機。員工須輸入完整手機查詢單筆會員，不可下載全館名冊。</p><div class="grid"><label>姓名<input id="memberName" maxlength="80" placeholder="會員姓名"></label><label>手機<input id="memberPhone" inputmode="numeric" placeholder="09XXXXXXXX"></label></div><div class="buttons"><button class="btn primary" onclick="saveMember()">新增或更新會員姓名</button><button class="btn" onclick="searchMembers()">查詢會員</button></div><label id="memberSearchLabel">搜尋會員（主管可搜尋姓名；員工請輸入完整手機）<input id="memberFilter" placeholder="員工請輸入完整手機號碼"></label><div id="memberList" class="scroll"></div>
 <div class="export-controls"><button data-export-only="true" class="btn green" onclick="exportMembers()">主管匯出全館會員名冊（Excel，完整手機）</button></div>
 <p class="export-hint">畫面手機號碼會遮蔽中間四碼；主管匯出檔會保留完整手機號碼。<strong>會員名冊屬於全館共用資料，不依作業館別切分。</strong></p></section>
 <section id="view-import" class="panel hidden"><h2>資料批次匯入（主管權限）</h2><div class="grid"><div class="panel sub"><h3>一、匯入公司會員名冊</h3><p class="info">需要「姓名／顧客名稱」及「手機／電話」欄位；僅供運動打卡與身體檢測，全館共用，不依作業館別分組；新增／更新不會清除核銷歷史。</p><input id="memberFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importMemberFile()">預覽名冊並確認匯入</button></div><div class="panel sub"><h3>二、匯入教練課簽到報表</h3><p class="info">依上方選定館別匯入公司 11 欄課程執行報表，逐堂去重，依合約訂單編號建立待領點數；<strong>不需會員名冊，也不必歸戶</strong>。</p><input id="ptFile" type="file" accept=".xlsx,.xls,.csv"><p class="info">匯入完成後，選擇的檔案會自動清空，方便接續匯入下一份。</p><button class="btn primary" onclick="importPTFile()">預覽課程並確認匯入</button></div></div><p class="notice">重要：匯入成功訊息只會在雲端寫入完成後出現。大量匯入可能需要時間；請勿關閉頁面。系統不會替未存檔資料顯示成功。</p><div id="importResult" class="info"></div></section>
 <section id="view-logs" class="panel hidden"><h2>全館核銷紀錄後台</h2><p class="info">僅列出已由櫃檯確認 LINE 成功發點的紀錄，依雲端交易紀錄查詢，可跨館檢視全部核銷。核銷歷史不會因修改會員姓名而清除。列表每次載入最近 100 筆；CSV 匯出只包含目前作業館別，並要求主管驗證。</p><div class="logtools"><label>館別<select id="logBranch"></select></label><label>項目<select id="logType"><option value="">全部項目</option><option value="CHECKIN">運動打卡</option><option value="INBODY">身體檢測</option><option value="PT">教練課程</option><option value="COURSE_EXEC">舊版手動執行課程（歷史紀錄）</option></select></label><label>開始日期<input id="logFrom" type="date"></label><label>結束日期<input id="logTo" type="date"></label></div><div class="buttons"><button class="btn" onclick="loadLogs(true)">查詢最近 100 筆</button><button id="moreLogsBtn" class="btn" onclick="loadLogs(false)">下一頁</button><button data-export-only="true" class="btn green" onclick="exportLogs()">主管匯出目前作業館別紀錄（CSV）</button></div><div class="export-scope">核銷紀錄可以在後台查看全部館別，但下載時固定只包含上方「作業館別」目前選取的館別（可套用項目／日期篩選）。</div><p id="logsSummary" class="info"></p><div id="logList" class="scroll"></div><section class="panel sub" id="pendingManage"><h3>待確認領點（主管處理）</h3><p class="info">例如櫃檯中途關閉頁面，會員資格會保留，避免其他館再次發放。主管須先確認 LINE 確實沒有發點，才能解除保留。</p><button class="btn" onclick="loadPending()">查詢待確認領點</button><div id="pendingList" class="scroll info" style="margin-top:12px"></div></section></section>
+<section id="view-staff-admin" class="panel hidden">
+  <h2>員工帳號管理｜僅管理員</h2>
+  <p class="info">先建立邀請並通知員工到 GK 網站自行註冊；驗證信由 Firebase 在註冊後寄送。此處不會自動寄出主管邀請信，也不會顯示或儲存員工密碼。</p>
+  <div class="panel sub"><h3>新增員工邀請</h3><div class="staff-admin-grid"><label>員工電子郵件<input type="email" id="inviteEmail" placeholder="staff@example.com" autocomplete="off"></label><label>指定館別<select id="inviteBranch"></select></label><button class="btn primary" onclick="inviteStaff()">建立員工邀請</button></div><p id="inviteStatus" class="info" aria-live="polite"></p></div>
+  <div class="panel sub"><h3>待啟用／已使用邀請</h3><button class="btn" onclick="loadStaffAdmin()">重新整理員工清單</button><div id="inviteList" class="table-scroller info" style="margin-top:12px">尚未載入</div></div>
+  <div class="panel sub"><h3>員工帳號</h3><p class="info">可調整員工館別或停用／重新啟用；無法在此修改主管帳號。停用權限後，員工下一次雲端操作應被拒絕。</p><div id="staffUserList" class="table-scroller info">尚未載入</div></div>
+</section>
 <footer>測試版不連結舊站 Firebase 或舊站 Google 試算表。正式部署前請建立員工帳號、套用 Firestore 規則並進行雙館同時核銷測試。</footer>
 </div></main>
 <script>
 'use strict';
 const CFG=window.GK_CONFIG, $=id=>document.getElementById(id);
 const types={CHECKIN:'運動打卡',INBODY:'身體檢測',PT:'教練課程',COURSE_EXEC:'執行課程'};
-let mode='',db=null,auth=null,user=null,role='',logCursor=null,loadedLogs=[],logHasMore=false,busy=false,verified=null;
+let mode='',db=null,auth=null,user=null,role='',userProfile=null,registering=false,logCursor=null,loadedLogs=[],logHasMore=false,busy=false,verified=null;
 const store={members:{},claims:{},logs:{},pools:{},sessions:{},ptSessionsV2:{},ptContractBalances:{},ptContractBindings:{}};
 function escapeHTML(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(message,kind='ok',where='verifyResult'){const x=$(where);x.className='notice '+(kind==='error'?'error':kind==='ok'?'ok':'');x.textContent=message;x.classList.remove('hidden');}
@@ -263,10 +277,15 @@ function cleanId(x){return String(x).replace(/[^\w\-]/g,'_').slice(0,220);}
 async function hash(t){const bytes=new TextEncoder().encode(t);const dig=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(dig)].map(n=>n.toString(16).padStart(2,'0')).join('');}
 function logData(type,name,phone,points,extra={}){return {campaignId:CFG.campaignId,type,name,phone:phone||'',points,branch:$('branch').value,week:isoWeek(),date: taipeiDate(),createdAt:mode==='cloud'?firebase.firestore.FieldValue.serverTimestamp():new Date().toISOString(),operator:mode==='cloud'?user.uid:'DEMO',...extra};}
 function isManager(){return mode==='demo'||role==='admin';}
-function requireManager(){if(!isManager())throw new Error('只有主管帳號有權限操作匯入及會員編修');}
+function requireManager(){if(!isManager())throw new Error('只有主管帳號有權限操作此功能');}
+function isStaff(){return mode==='cloud' && role==='staff';}
+function effectiveBranch(){return isStaff()?userProfile.branch:$('branch').value;}
+function requireActiveBranch(){if(isStaff()&&$('branch').value!==userProfile.branch)throw new Error('員工只能操作所屬館別，請重新登入');}
+function normalizeEmail(x){return String(x||'').trim().toLowerCase();}
 function setStatus(t){$('status').textContent=t;}
-function setupBranch(){const b=$('branch');b.innerHTML=CFG.branches.map(s=>`<option>${escapeHTML(s)}</option>`).join('');b.value=sessionStorage.getItem('gk_test_branch')||CFG.branches[0];$('logBranch').innerHTML='<option value="">全部館別</option>'+CFG.branches.map(s=>`<option>${escapeHTML(s)}</option>`).join('');$('logBranch').value=b.value;}
+function setupBranch(){const b=$('branch');const branches=isStaff()?[userProfile.branch]:CFG.branches;b.innerHTML=branches.map(s=>`<option>${escapeHTML(s)}</option>`).join('');b.value=isStaff()?userProfile.branch:(sessionStorage.getItem('gk_test_branch')||CFG.branches[0]);b.disabled=isStaff();$('logBranch').innerHTML='<option value="">全部館別</option>'+CFG.branches.map(s=>`<option>${escapeHTML(s)}</option>`).join('');$('logBranch').value=b.value;const i=$('inviteBranch');if(i)i.innerHTML=CFG.branches.map(s=>`<option>${escapeHTML(s)}</option>`).join('');}
 function branchChanged(){
+  if(isStaff() && $('branch').value!==userProfile.branch){$('branch').value=userProfile.branch;return;}
   sessionStorage.setItem('gk_test_branch',$('branch').value);
   $('logBranch').value=$('branch').value;
   // Switching branch invalidates any previous PT lookup and contract-binding result.
@@ -279,14 +298,63 @@ function branchChanged(){
 }
 function resetVerification(){if(verified)return;const result=$('verifyResult');if(result)result.classList.add('hidden');}
 function selectQuickTask(t){if(!['CHECKIN','INBODY'].includes(t)||busy)return;$('task').value=t;for(const btn of document.querySelectorAll('[data-task-choice]')){const on=btn.dataset.taskChoice===t;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));}resetVerification();}
-function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelectorAll('[data-export-only]').forEach(x=>x.classList.toggle('hidden',!isManager()));document.querySelector('[data-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="import"]').classList.toggle('hidden',!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role;selectQuickTask('CHECKIN');tab('verify');refreshStats();}
-function tab(name){if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');for(const p of document.querySelectorAll('.tab'))p.classList.toggle('active',p.dataset.tab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();}
+function initApp(){setupBranch();$('modePanel').classList.add('hidden');$('loginPanel').classList.add('hidden');$('app').classList.remove('hidden');$('pendingManage').classList.toggle('hidden',!isManager());document.querySelectorAll('[data-export-only]').forEach(x=>x.classList.toggle('hidden',!isManager()));document.querySelector('[data-tab="logs"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="import"]').classList.toggle('hidden',!isManager());document.querySelector('[data-tab="staff-admin"]').classList.toggle('hidden',mode!=='cloud'||!isManager());$('who').textContent=mode==='demo'?'示範操作員':'登入帳號：'+user.email+' / '+role+(isStaff()?' / '+userProfile.branch+'館':'');selectQuickTask('CHECKIN');tab('verify');refreshStats();}
+function tab(name){if(['import','logs','staff-admin'].includes(name)&&!isManager())return;if(name==='staff-admin'&&mode!=='cloud')return;if(!$('feedbackModal').classList.contains('hidden'))closeFeedbackModal();if(name!=='pt'){cancelPTClaim();ptSelection=null;}for(const p of document.querySelectorAll('[id^="view-"]'))p.classList.add('hidden');$('view-'+name).classList.remove('hidden');for(const p of document.querySelectorAll('.tab'))p.classList.toggle('active',p.dataset.tab===name);if(name==='logs')loadLogs(true);if(name==='members')searchMembers();if(name==='unclaimed')loadUnclaimed();if(name==='staff-admin')loadStaffAdmin();}
 function startDemo(){mode='demo';role='admin';try{Object.assign(store,JSON.parse(localStorage.getItem(CFG.demoStorageKey)||'{}'));}catch(e){};for(const k of ['ptSessionsV2','ptContractBalances','ptContractBindings'])store[k]=store[k]||{};if(!Object.keys(store.members||{}).length){store.members={'0911111111':{name:'示範會員甲',phone:'0911111111'},'0922222222':{name:'示範會員乙',phone:'0922222222'}};saveDemo();}setStatus('本機示範｜不跨裝置');$('banner').textContent='本機示範模式：僅使用虛構資料。沒有跨電腦同步，請勿輸入真實會員資料或用於正式核銷。';initApp();}
 function saveDemo(){localStorage.setItem(CFG.demoStorageKey,JSON.stringify(store));refreshStats();}
 function configured(){return CFG.firebase.apiKey!=='REPLACE_ME'&&CFG.firebase.projectId!=='REPLACE_ME';}
-function startCloud(){if(!configured()){alert('尚未設定獨立的 Firebase 測試專案。請先閱讀 README，編輯 config.js。');return;}try{firebase.initializeApp(CFG.firebase);auth=firebase.auth();db=firebase.firestore();db.settings({ignoreUndefinedProperties:true});mode='cloud';$('modePanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');auth.onAuthStateChanged(async u=>{if(!u)return;try{await authorize(u);initApp();}catch(e){await auth.signOut();fail(e,'banner');$('modePanel').classList.remove('hidden');$('loginPanel').classList.add('hidden');}});}catch(e){fail(e,'banner');}}
-async function authorize(u){const s=await db.collection('users').doc(u.uid).get({source:'server'});if(!s.exists||s.data().enabled!==true||!['staff','admin'].includes(s.data().role))throw new Error('帳號未啟用或未設定 staff/admin 權限');user=u;role=s.data().role;setStatus('雲端登入｜交易核銷');$('logout').classList.remove('hidden');}
-async function login(){try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);}catch(e){fail(e,'banner');}}
+function startCloud(){
+  if(!configured()){alert('尚未設定 Firebase 專案，請檢查 config.js。');return;}
+  try{
+    if(firebase.apps.length)firebase.app();else firebase.initializeApp(CFG.firebase);
+    auth=firebase.auth();db=firebase.firestore();db.settings({ignoreUndefinedProperties:true});mode='cloud';
+    $('modePanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');
+    auth.onAuthStateChanged(async u=>{
+      if(registering)return;
+      if(!u){if($('app').classList.contains('hidden')){$('loginPanel').classList.remove('hidden');setStatus('等待員工登入');}return;}
+      try{await authorize(u);initApp();}
+      catch(e){await auth.signOut();$('app').classList.add('hidden');$('loginPanel').classList.remove('hidden');fail(e,'banner');setStatus('登入未授權');}
+    });
+  }catch(e){fail(e,'banner');}
+}
+async function authorize(u){
+  await u.reload();
+  await u.getIdToken(true);
+  let s=await db.collection('users').doc(u.uid).get({source:'server'});
+  if(!s.exists){
+    if(!u.emailVerified)throw new Error('此帳號尚未驗證電子郵件。請先完成驗證信流程再登入。');
+    await claimStaffInvite(u);
+    s=await db.collection('users').doc(u.uid).get({source:'server'});
+  }
+  if(!s.exists||s.data().enabled!==true||!['staff','admin'].includes(s.data().role))throw new Error('帳號未啟用或權限已停用');
+  if(s.data().role==='staff'&&!CFG.branches.includes(s.data().branch))throw new Error('員工尚未設定有效的所屬館別');
+  user=u;role=s.data().role;userProfile=s.data();setStatus('雲端登入｜交易核銷');$('logout').classList.remove('hidden');
+}
+async function claimStaffInvite(u){
+  const email=normalizeEmail(u.email),inviteId=await hash('GK-STAFF-INVITE|'+email);
+  const inviteRef=db.collection('staffInvites').doc(inviteId),userRef=db.collection('users').doc(u.uid);
+  await db.runTransaction(async tx=>{
+    const invite=await tx.get(inviteRef),existing=await tx.get(userRef);
+    if(existing.exists)return;
+    if(!invite.exists||invite.data().status!=='pending'||invite.data().email!==email||!CFG.branches.includes(invite.data().branch))throw new Error('找不到有效的受邀員工資料，請主管先建立邀請');
+    tx.set(userRef,{email,role:'staff',branch:invite.data().branch,enabled:true,inviteId,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    tx.update(inviteRef,{status:'claimed',claimedUid:u.uid,claimedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  });
+}
+async function login(){try{await auth.signInWithEmailAndPassword(normalizeEmail($('email').value),$('password').value);$('password').value='';}catch(e){fail(e,'banner');}}
+async function signupInvitedStaff(){
+  if(registering)return;
+  const email=normalizeEmail($('signupEmail').value),password=$('signupPassword').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||password.length<6){$('signupStatus').textContent='請輸入有效電子郵件與至少 6 字元密碼。';return;}
+  registering=true;$('signupButton').disabled=true;
+  try{
+    const credential=await auth.createUserWithEmailAndPassword(email,password);
+    await credential.user.sendEmailVerification();
+    $('signupStatus').textContent='已建立帳號並寄出 Firebase 驗證信。請到信箱完成驗證，回來使用上方登入。主管須先建立對應邀請。';
+    $('signupPassword').value='';await auth.signOut();
+  }catch(e){$('signupStatus').textContent='註冊未完成：'+(e.code==='auth/email-already-in-use'?'此信箱已建立 Firebase 帳號，請直接登入；如果尚未驗證信箱，請聯絡管理員協助。':e.message);}
+  finally{registering=false;$('signupButton').disabled=false;}
+}
 async function logout(){if(mode==='cloud'){await auth.signOut();location.reload();}else location.reload();}
 function fresh(){if(mode!=='cloud')return; if(!navigator.onLine)throw new Error('網路離線；禁止核銷以避免跨館重複'); if(!user)throw new Error('尚未登入');}
 function lock(v){busy=v;for(const b of document.querySelectorAll('#app button')){if(!b.classList.contains('tab'))b.disabled=v;}for(const x of ['phone','branch'])if($(x))$(x).disabled=v;for(const id of ['finishClaim','cancelClaim'])if($(id))$(id).disabled=v;}
@@ -325,6 +393,7 @@ function getClaimStatus(claim){return claim?.status||'confirmed';} // 舊版沒�
 function makePending(p,t,branch,token,key){return {campaignId:CFG.campaignId,type:t,phone:p,branch,week:isoWeek(),createdAt:mode==='cloud'?firebase.firestore.FieldValue.serverTimestamp():new Date().toISOString(),logId:key,status:'pending',operatorUid:mode==='cloud'?user.uid:'DEMO',reservationId:token};}
 async function lookupMember(){
   if(busy||verified)return;
+  try{requireActiveBranch();}catch(e){showFeedbackModal('館別權限不符',e.message,'error');return;}
   const p=normalizedPhone($('phone').value),t=$('task').value,branch=$('branch').value;
   if(!p){$('phone').value='';showFeedbackModal('手機號碼格式不正確','請輸入 09 開頭的 10 碼手機號碼。','error');return;}
   if(!['CHECKIN','INBODY'].includes(t)){$('phone').value='';showFeedbackModal('請重新選擇集點項目','目前僅支援館內運動打卡及身體檢測。','error');return;}
@@ -351,12 +420,13 @@ async function lookupMember(){
     toast(`${name}｜${types[t]}：查驗通過，本次已保留 1 點資格。請出示現場 LINE QR Code。`,'ok');
     showClaimModal();
   }catch(e){
-    if(e?.code==='MEMBER_NOT_FOUND'||e?.message==='查無會員建檔')showFeedbackModal('查無會員建檔','此手機號碼目前不在全館共用會員名冊。請先請主管建檔或匯入會員名冊，再重新查詢。','warning');
+    if(e?.code==='MEMBER_NOT_FOUND'||e?.message==='查無會員建檔')showFeedbackModal('查無會員建檔','此手機號碼目前不在全館共用會員名冊。請先在會員管理新增會員，再重新查詢。','warning');
     else showFeedbackModal('無法領取點數',e?.message||String(e),'error');
   }finally{$('phone').value='';lock(false);}
 }
 async function redeem(){
   if(busy||!verified)return;
+  try{requireActiveBranch();}catch(e){showFeedbackModal('館別權限不符',e.message,'error');return;}
   const {phone:p,type:t,branch,name,token,key}=verified;
   if(!confirm(`只有在 LINE 已成功發放點數後，才能登記完成。\n\n${name}｜${types[t]}｜1 點\n${branch}\n\n確定 LINE 已成功發點？`))return;
   lock(true);
@@ -380,6 +450,7 @@ async function redeem(){
 }
 async function cancelReservation(){
   if(busy||!verified)return;
+  try{requireActiveBranch();}catch(e){showFeedbackModal('館別權限不符',e.message,'error');return;}
   const {key,token}=verified;
   if(!confirm('請確認 LINE 尚未發放任何點數。取消後會解除資格保留；若 LINE 已發點，請改按「登記完成」。確定取消？'))return;
   lock(true);
@@ -439,8 +510,40 @@ async function releasePendingAdmin(key){
     await loadPending();
   }catch(e){alert('解除失敗：'+e.message);}finally{lock(false);}
 }
-async function saveMember(){try{requireManager();fresh();const name=tidyName($('memberName').value),p=normalizedPhone($('memberPhone').value);if(!name||!p)throw new Error('請輸入姓名與有效手機');if(!confirm(`新增／更新會員 ${name} (${p})？`))return;lock(true);if(mode==='cloud')await db.collection('members').doc(p).set({name,phone:p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});else{store.members[p]={...(store.members[p]||{}),name,phone:p};saveDemo();}toast('會員儲存完成（不會清除任何歷史核銷）','ok','banner');$('memberName').value='';$('memberPhone').value='';await searchMembers();}catch(e){fail(e,'banner');}finally{lock(false);}}
-async function searchMembers(){const filter=$('memberFilter').value.trim();try{let result=[];if(mode==='cloud'){fresh();const s=await db.collection('members').limit(500).get({source:'server'});result=s.docs.map(x=>x.data());}else result=Object.values(store.members);const match=result.filter(m=>!filter||String(m.name||'').includes(filter)||String(m.phone||'').includes(filter));$('memberList').innerHTML=`<p class="info">顯示 ${match.length} 筆；雲端模式僅載入前 500 筆（大量名冊請直接以手機查驗）。</p><table><thead><tr><th>姓名</th><th>手機</th></tr></thead><tbody>${match.map(m=>`<tr><td>${escapeHTML(m.name)}</td><td>${escapeHTML(maskPhone(m.phone))}</td></tr>`).join('')}</tbody></table>`;}catch(e){$('memberList').textContent='查詢失敗：'+e.message;}}
+async function saveMember(){
+  try{
+    fresh();const name=tidyName($('memberName').value),p=normalizedPhone($('memberPhone').value);
+    if(!name||!p)throw new Error('請輸入姓名與有效手機');
+    if(!confirm(`新增會員／更正姓名：${name} (${p})？\n原本的手機識別碼不會改動，核銷歷史也不會清除。`))return;
+    lock(true);
+    if(mode==='cloud'){
+      const data={name,phone:p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+      if(user)data.updatedBy=user.uid;
+      await db.collection('members').doc(p).set(data,{merge:true});
+    }else{store.members[p]={...(store.members[p]||{}),name,phone:p};saveDemo();}
+    toast('會員儲存完成（不會清除核銷歷史）','ok','banner');
+    $('memberName').value='';$('memberPhone').value='';
+    if(isStaff())$('memberFilter').value=p;
+    await searchMembers();
+  }catch(e){fail(e,'banner');}finally{lock(false);}
+}
+async function searchMembers(){
+  const filter=$('memberFilter').value.trim();
+  try{
+    let result=[];
+    if(mode==='cloud'){
+      fresh();
+      if(isStaff()){
+        const phone=normalizedPhone(filter);
+        if(!phone){$('memberList').innerHTML='<p class="info">一般員工請輸入完整 10 碼手機號碼查詢單筆會員；不提供整份名冊瀏覽。</p>';return;}
+        const s=await db.collection('members').doc(phone).get({source:'server'});
+        result=s.exists?[s.data()]:[];
+      }else{const s=await db.collection('members').limit(500).get({source:'server'});result=s.docs.map(x=>x.data());}
+    }else result=Object.values(store.members);
+    const match=isStaff()?result:result.filter(m=>!filter||String(m.name||'').includes(filter)||String(m.phone||'').includes(filter));
+    $('memberList').innerHTML=`<p class="info">顯示 ${match.length} 筆；員工限完整手機查詢單筆會員，主管預覽最多 500 筆。</p><table><thead><tr><th>姓名</th><th>手機</th></tr></thead><tbody>${match.map(m=>`<tr><td>${escapeHTML(m.name)}</td><td>${escapeHTML(maskPhone(m.phone))}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){$('memberList').textContent='查詢失敗：'+e.message;}
+}
 async function exportMembers(){
   try{
     if(!await requestExportPIN('全館會員名冊（手機號碼完整；不限館別）'))return;
@@ -470,7 +573,7 @@ async function getMember(phone){
 }
 // v1.12: 教練課程以「館別 + 合約」為領點單位；不靠手機或姓名自動歸戶。
 async function loadPTBalances(branch,onlyPending=true){
-  fresh();let out=[];
+  requireActiveBranch();fresh();let out=[];
   if(mode==='cloud'){
     let cursor=null;while(true){
       let q=db.collection('ptContractBalances').where('branch','==',branch).limit(250);
@@ -487,7 +590,7 @@ async function loadPTBalances(branch,onlyPending=true){
 // 目前 ptContractBalances 只有每張合約的總點數；教練由原始逐堂簽到紀錄回查。
 // 舊版資料可能含已核銷的歷史教練，因此欄名使用「該合約簽到教練」而非「待領堂數所屬教練」。
 async function loadCoachesByBranch(branch){
-  const groups=new Map();
+  requireActiveBranch();const groups=new Map();
   const add=s=>{if(s.branch!==branch||!s.contractId||!s.coach)return;
     if(!groups.has(s.contractId))groups.set(s.contractId,new Set());
     groups.get(s.contractId).add(tidyName(s.coach));};
@@ -550,6 +653,7 @@ async function openPTFromUnclaimed(contract){
 }
 async function searchPT(){
   if(busy)return;
+  try{requireActiveBranch();}catch(e){showPTResult(e.message);return;}
   ptSelection=null;ptSelected.clear();ptRows=[];ptLookupBranch='';
   const term=$('ptQuery').value.trim().toLowerCase(),branch=$('branch').value;
   if(term.length<2){$('ptResult').innerHTML='<div class="notice error">請至少輸入兩個字或兩碼合約編號。</div>';return;}
@@ -599,6 +703,7 @@ function startPTClaim(){
 function cancelPTClaim(){ptSelection=null;$('ptClaimModal').classList.add('hidden');}
 async function redeemSelectedPT(){
   if(busy||!ptSelection)return;
+  try{requireActiveBranch();}catch(e){showFeedbackModal('館別權限不符',e.message,'error');return;}
   const chosen=ptSelection;
   if(chosen.branch!==$('branch').value){cancelPTClaim();showFeedbackModal('館別已更換','請重新查詢。','error');return;}
   if(chosen.contracts.length>400){showFeedbackModal('合約數量過多','請分批核銷，這不是點數上限。','error');return;}
@@ -744,6 +849,55 @@ async function exportLogs(){
     $('logsSummary').textContent=`已匯出 ${branch}館 ${match.length} 筆核銷紀錄（依項目／日期篩選，手機為完整號碼）。`;
   }catch(e){$('logsSummary').textContent='匯出失敗：'+e.message;}
   finally{if(locked)lock(false);}
+}
+
+
+// v1.14: 管理員邀請員工、管理既有員工。只建立「staff」，不開放自行新增 admin。
+async function inviteStaff(){
+  try{
+    requireManager();fresh();
+    const email=normalizeEmail($('inviteEmail').value),branch=$('inviteBranch').value;
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||!CFG.branches.includes(branch))throw new Error('請輸入有效電子郵件與館別');
+    if(!confirm(`建立 ${email} 的 ${branch}館員工邀請？\n請再通知員工到 GK 網站註冊並驗證信箱。`))return;
+    const id=await hash('GK-STAFF-INVITE|'+email);
+    const ref=db.collection('staffInvites').doc(id);
+    const doc=await ref.get({source:'server'});
+    if(doc.exists)throw new Error('這個信箱已經有邀請紀錄，請在下方查看狀態，避免重複授權');
+    await ref.set({email,branch,status:'pending',createdBy:user.uid,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    $('inviteEmail').value='';$('inviteStatus').textContent='邀請已建立。請把 GK 網站網址提供給員工，請其使用這個信箱註冊與驗證。';
+    await loadStaffAdmin();
+  }catch(e){$('inviteStatus').textContent='建立失敗：'+(e.message||e);}
+}
+async function revokeInvite(id){
+  try{
+    requireManager();fresh();
+    if(!confirm('確定撤銷這個尚未使用的員工邀請？'))return;
+    await db.collection('staffInvites').doc(id).update({status:'revoked',updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await loadStaffAdmin();
+  }catch(e){alert('撤銷失敗：'+e.message);}
+}
+async function updateStaffAccess(uid,currentBranch,currentEnabled){
+  try{
+    requireManager();fresh();
+    const sel=$('staffBranch_'+uid),branch=sel.value,enabled=$('staffEnabled_'+uid).checked;
+    if(!CFG.branches.includes(branch))throw new Error('無效館別');
+    if(branch===currentBranch && enabled===currentEnabled)return;
+    if(!confirm(`確定修改這位員工：\n館別：${branch}\n權限：${enabled?'啟用':'停用'}？`))return;
+    await db.collection('users').doc(uid).update({branch,enabled,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await loadStaffAdmin();
+  }catch(e){alert('更新失敗：'+e.message);}
+}
+async function loadStaffAdmin(){
+  if(mode!=='cloud'||!isManager())return;
+  $('inviteList').textContent='正在讀取邀請…';$('staffUserList').textContent='正在讀取員工…';
+  try{
+    fresh();
+    const [a,b]=await Promise.all([db.collection('staffInvites').limit(300).get({source:'server'}),db.collection('users').limit(300).get({source:'server'})]);
+    const invites=a.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>String(x.email).localeCompare(String(y.email)));
+    $('inviteList').innerHTML=invites.length?`<table><thead><tr><th>信箱</th><th>館別</th><th>狀態</th><th>操作</th></tr></thead><tbody>${invites.map(i=>`<tr><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.branch)}</td><td>${escapeHTML(i.status==='claimed'?'已啟用':i.status==='revoked'?'已撤銷':'待註冊驗證')}</td><td>${i.status==='pending'?`<button class="btn" data-invite-id="${escapeHTML(i.id)}" onclick="revokeInvite(this.dataset.inviteId)">撤銷邀請</button>`:'—'}</td></tr>`).join('')}</tbody></table>`:'尚無邀請';
+    const people=b.docs.filter(d=>d.data().role==='staff').map(d=>({uid:d.id,...d.data()})).sort((x,y)=>String(x.email||x.uid).localeCompare(String(y.email||y.uid)));
+    $('staffUserList').innerHTML=people.length?`<table><thead><tr><th>員工</th><th>館別</th><th>啟用狀態</th><th>操作</th></tr></thead><tbody>${people.map(p=>`<tr><td>${escapeHTML(p.email||'未記錄信箱（舊測試帳號）')}<small style="display:block">${escapeHTML(p.uid)}</small></td><td><select id="staffBranch_${escapeHTML(p.uid)}">${CFG.branches.map(v=>`<option value="${escapeHTML(v)}" ${v===p.branch?'selected':''}>${escapeHTML(v)}</option>`).join('')}</select></td><td><label><input id="staffEnabled_${escapeHTML(p.uid)}" type="checkbox" style="width:auto" ${p.enabled?'checked':''}> 啟用</label></td><td><button class="btn primary" data-staff-uid="${escapeHTML(p.uid)}" data-branch="${escapeHTML(p.branch)}" data-enabled="${p.enabled?'1':'0'}" onclick="updateStaffAccess(this.dataset.staffUid,this.dataset.branch,this.dataset.enabled==='1')">儲存變更</button></td></tr>`).join('')}</tbody></table>`:'目前沒有員工帳號';
+  }catch(e){$('inviteList').textContent='讀取失敗：'+e.message;$('staffUserList').textContent='請確認 Firestore 權限並重新整理。';}
 }
 
 async function refreshStats(){
